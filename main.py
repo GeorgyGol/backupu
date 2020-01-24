@@ -1,9 +1,12 @@
-import os
-import subprocess
 import datetime as dt
+import os
 import re
-from shutil import copyfile, copy2
-from info import FolderInfo
+import subprocess
+import shutil
+import pandas as pd
+import argparse
+
+from cmdl_backpz.info import FolderInfo
 
 strWorkPath=r'd:\proba'
 black_lst_ext=['db', 'exe', 'psd']
@@ -228,7 +231,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+
+    print(re.__version__)
+#    print(subprocess.__version__)
+#    print(shutil.__version__)
+    print(pd.__version__)
+    print(argparse.__version__)
+
+    #main()
 
 
 
