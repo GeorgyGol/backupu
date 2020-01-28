@@ -3,9 +3,9 @@ from setuptools import setup, find_packages
 import cmdl_backpz
 import os
 
+# Get the long description from the README file
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
-
 
 setup(
     name='backupz',
@@ -13,6 +13,8 @@ setup(
     packages=['cmdl_backpz',],
     scripts=['cmdl_backpz/backupz.py',],
     entry_points={'console_scripts': ['backupz = cmdl_backpz.backupz:main']},
+    long_description=read('README.md'),
+    long_description_content_type="text/markdown",
     url='',
     license='',
     author='G. Golyshev',
@@ -24,4 +26,3 @@ setup(
     # ],
     # python_requires='>=3.3'
 )
-

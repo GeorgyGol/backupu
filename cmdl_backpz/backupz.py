@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument('/s', '--source', help='Source dir (one) for backup or copy', required=True)
     parser.add_argument('/d', '--destination', help='Target dir (one) for backup or copy', required=True)
     parser.add_argument('/z', '--zip', help='ZIP-Archive destination', required=False, action='store_true')
-    parser.add_argument('/w', '--work', help='backup (full or incremental) or copy', default=actions.WORK_TYPE.copy,
+    parser.add_argument('/w', '--work', help='backup (full, inc or diff) or copy', default=actions.WORK_TYPE.copy,
                         choices=[' {}'.format(actions.WORK_TYPE.backup_full),
                                  ' {}'.format(actions.WORK_TYPE.backup_inc),
                                  ' {}'.format(actions.WORK_TYPE.backup_diff),
