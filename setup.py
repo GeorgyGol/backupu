@@ -5,7 +5,7 @@ import os
 
 # Get the long description from the README file
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return open(fname).read()
 
 setup(
     name='backupz',
