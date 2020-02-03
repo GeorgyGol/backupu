@@ -196,10 +196,16 @@ DEST PATH RULE - {pathrule}
     def scan(self, full=False):
         self._files.scan()
         if full:
-            self._files.switch_filter(filter_name='archive', switch_value=False)
+            try:
+                self._files.switch_filter(filter_name='archive', switch_value=False)
+            except KeyError:
+                pass
             return self._files.filtered_files
         else:
-            self._files.switch_filter(filter_name='archive', switch_value=True)
+            try:
+                self._files.switch_filter(filter_name='archive', switch_value=True)
+            except KeyError:
+                pass
             return self._files.filtered_files
 
     def _switch_archive(self, strPath, str_comm='-A'):
@@ -292,7 +298,15 @@ DEST PATH RULE - {pathrule}
         cnt_error=0
 
         for i, pair in enumerate(work_list):
-            print('\t{2} from:\t{3} {4} {0} to {1}...'.format(pair[0], pair[1], i+1, len(work_list), strWork.lower()), end='', flush=True)
+            try:
+                print('\t{2} from:\t{3} {4} {0} to {1}...'.format(pair[0], pair[1], i+1, len(work_list), strWork.lower()), end='', flush=True)
+            except UnicodeEncodeError:
+                print('something wrong with file name on print log')
+                self._log(logging.WARNING, 'something wrong with file name on print log')
+            except:
+                self._log(logging.ERROR, 'UNEXPECTED ERROR WITH STATUS PRINT {}'.format(err=sys.exc_info()[0]))
+                print("Unexpected error:", sys.exc_info()[0], flush=True)
+
             try:
                 copy2(pair[0], pair[1]) # maybe using xcopy windows command
                 if strWork in [WORK_TYPE.backup_full, WORK_TYPE.backup_inc]:
@@ -414,8 +428,9 @@ def copy():
     # strTargetDir = os.path.join('d:', os.path.sep, 'p_csv')
 
     #x_subpath = x_path_copy(strTargetDir)
-    x = XCopy_A(strWorkPath=r'U:\Golyshev\Py', name='copy test', strSavePath=r'G:\u_golyshev')
-    x.filters(f_dirb)
+    x = XCopy_A(strWorkPath=r'U:\Solntsev\4site\New', name='copy test',
+                strSavePath=r'd:\copytest')
+    #x.filters(f_dirb)
     #
     # for i in os.walk(x.work_path):
     #     print(i)
@@ -468,10 +483,10 @@ if __name__ == "__main__":
 
     #main()
 
-    f=x_path_copy('ddd')
-    print(issubclass(type(f), X_SPATH))
-    print(issubclass(type(WORK_TYPE), x_work_types))
-    print(type(None))
+    # f=x_path_copy('ddd')
+    # print(issubclass(type(f), X_SPATH))
+    # print(issubclass(type(WORK_TYPE), x_work_types))
+    # print(type(None))
     # print(WORK_TYPE.copy)
     # print('copy1' in WORK_TYPE)
     # print(WORK_TYPE[WORK_TYPE.backup_inc])

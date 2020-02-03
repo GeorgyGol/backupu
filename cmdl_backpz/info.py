@@ -59,7 +59,7 @@ def main():
     black_dirs = scan.x_folders(name='excl. dirs', lst_folders=[r'@Recycle', ])
 
     #xinfo = FolderInfo(r'\\Commd\Personal', black_dirs)
-    xinfo = FolderInfo(r'\\l26-srv0\f$\p\INC_23_01_2020', black_dirs)
+    xinfo = FolderInfo(r'\\l26-srv0\h$\U\INC_29_01_2020', black_dirs)
 
     print(xinfo)
 
@@ -70,10 +70,10 @@ def main():
     print('extensions :', xinfo.extensions)
     print('Full size: ', xinfo.sum())
 
-    xinfo.to_csv(file_name='f_p_inc_files.csv')
+    xinfo.to_csv(file_name='f_u_inc_files.csv')
     ext=xinfo.sum_ext()
     print(ext)
-    ext.to_csv('f_p_inc_exts.csv', sep=';', encoding='cp1251')
+    ext.to_csv('f_u_inc_exts.csv', sep=';', encoding='cp1251')
 
     #pdf.to_csv('u_gg_view.csv', sep=';')
 

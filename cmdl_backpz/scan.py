@@ -133,6 +133,33 @@ class x_archive(FFilter):
     def params(self):
         return 'A-attrib of file'
 
+
+class x_ge_change_date(FFilter):
+    _diff_dt=None
+
+    def __init__(self, name='', days_num=0, black=True):
+        self.name=name
+        self._black=bool(black)
+        self._diff_dt=dt.timedelta(days=days_num)
+
+    @property
+    def params(self):
+        return self._diff_dt.days
+
+    @property
+    def black(self):
+        return self._black
+
+    def check(self, strPath):
+        if self.is_on:
+            try:
+                res=os.stat(strPath)
+                mod_date=dt.datetime.fromtimestamp(res.st_mtime)
+                #print(mod_date.strftime('%d.%m.%Y'), (dt.datetime.now()-self._diff_dt).strftime('%d.%m.%Y'), self._diff_dt)
+                return mod_date >= (dt.datetime.now()-self._diff_dt)
+            except FileNotFoundError:
+                return False
+
 #=======================================================================================================================
 class FileList():
     """main class of thismodule
@@ -242,8 +269,18 @@ def main():
         print(i)
 
     print(lstf)
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    ft=x_ge_change_date(days_num=20)
+
+    flst=FileList(r'U:\Solntsev\4site\New')
+
+    flst.scan()
+
+    for f in flst.files:
+        print(f, ft.check(f))
 
 
 
