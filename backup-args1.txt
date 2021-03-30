@@ -1,7 +1,7 @@
-/s \\L26-1312B7\e$
-/d g:\GALIMOV
-/n GALIMOV copy
+/s \\Commd\P_CMASFProject
+/d g:\P
+/n P 18.03.20 copy
 -e lnk, tmp
--f @Recycle, $RECYCLE.BIN, 1f2603bbcbe72c26698880dda513bcc1
+-f @Recycle
 -n \~\$
 /w copy

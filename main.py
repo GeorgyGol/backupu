@@ -126,7 +126,7 @@ Backup work unit:
         lst=[(f, f.replace(self._strBasePath, strTarget)) for f in self.work_files]
         for cf in lst:
             print('copy {0} to {1}...'.format(cf[0], cf[1]), end='')
-            copy2(cf[0], cf[1])
+            shutil.copy2(cf[0], cf[1])
             self._switch_archive(cf[0])
             print('done')
         return len(lst)

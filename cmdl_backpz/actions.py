@@ -299,10 +299,16 @@ DEST PATH RULE - {pathrule}
 
         for i, pair in enumerate(work_list):
             try:
-                print('\t{2} from:\t{3} {4} {0} to {1}...'.format(pair[0], pair[1], i+1, len(work_list), strWork.lower()), end='', flush=True)
+                print('\t{2} from:\t{3} {4} {0} to {1}...'.format(pair[0], pair[1], i+1,
+                                                                  len(work_list), strWork.lower()), end='', flush=True)
             except UnicodeEncodeError:
-                print('something wrong with file name on print log')
-                self._log(logging.WARNING, 'something wrong with file name on print log')
+                print('something wrong with file name on print log', end='')
+                try:
+                    self._log(logging.WARNING, 'something wrong with file name on print log - {}'.format(pair[1]))
+                    print(' - ', pair[1])
+                except:
+                    print('')
+                    self._log(logging.WARNING, 'something wrong with file name on print log')
             except:
                 self._log(logging.ERROR, 'UNEXPECTED ERROR WITH STATUS PRINT {}'.format(err=sys.exc_info()[0]))
                 print("Unexpected error:", sys.exc_info()[0], flush=True)
@@ -422,15 +428,20 @@ DEST PATH RULE - {pathrule}
 
 def copy():
     f_extw = scan.x_extension_list(name='only ext', lst_ext=['csv', 'xml'], black=False)
+    f_extb = scan.x_extension_list(name='excl ext', lst_ext=['tmp', 'lnk'])
     f_dirb = scan.x_folders(name='excl dirs', lst_folders=['@Recycle', ])
     #p_csv @Recycle
     # strSourceDir =  os.path.join('p:', os.path.sep)
     # strTargetDir = os.path.join('d:', os.path.sep, 'p_csv')
 
     #x_subpath = x_path_copy(strTargetDir)
-    x = XCopy_A(strWorkPath=r'U:\Solntsev\4site\New', name='copy test',
-                strSavePath=r'd:\copytest')
-    #x.filters(f_dirb)
+    # x = XCopy_A(strWorkPath=r'\\Commd\Statistica', name='S copy 30032020',
+    #             strSavePath=r'G:\S')
+
+    x = XCopy_A(strWorkPath=r'\\l26-1305-003\d$', name='DBELO copy 15092020',
+                strSavePath=r'G:')
+
+    # x.filters(f_extb, f_dirb)
     #
     # for i in os.walk(x.work_path):
     #     print(i)

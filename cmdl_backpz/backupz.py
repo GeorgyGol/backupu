@@ -1,3 +1,8 @@
+"""
+Entry point for BACKUP-commend
+run from batch, do various backup works
+"""
+
 import argparse
 import logging
 import os.path
