@@ -1,0 +1,7 @@
+/s \\Commd\P_CMASFProject
+/d \\l26-srv0\f$\p
+/n Full P backup
+-e tmp, xml, csv, lnk
+-f @Recycle
+-n \~\$
+/w b_full

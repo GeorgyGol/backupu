@@ -1,0 +1,7 @@
+/s \\Commd\Personal
+/d g:\u
+/n Increment U backup
+-e tmp, xml, csv, lnk, Rhistory, RData, project, db, cache
+-f @Recycle
+-n \~\$, ^\.
+/w b_inc

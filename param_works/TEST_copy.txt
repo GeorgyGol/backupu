@@ -1,0 +1,7 @@
+/s \\Commd\Personal\Golyshev\Py
+/d G:\u_golyshev
+/n TEST part U copy
+-e tmp, xml, csv, exe, lnk
+-f @Recycle
+-n \~\$
+/w copy

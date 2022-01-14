@@ -1,0 +1,7 @@
+/s \\Commd\Personal
+/d g:\u
+/n Full U backup
+-e tmp, xml, csv, lnk
+-f @Recycle
+-n \~\$
+/w b_full

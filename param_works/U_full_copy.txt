@@ -1,0 +1,7 @@
+/s \\Commd\Personal
+/d g:\u
+/n Full U copy
+-e tmp, xml, csv, exe, lnk
+-f @Recycle
+-n \~\$
+/w copy

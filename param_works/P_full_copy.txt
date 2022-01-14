@@ -1,0 +1,7 @@
+/s \\Commd\P_CMASFProject
+/d g:\p
+/n Full P copy
+-e tmp, xml, csv, exe, lnk
+-f @Recycle
+-n \~\$
+/w copy

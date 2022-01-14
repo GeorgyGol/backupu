@@ -1,0 +1,7 @@
+/s \\L26-wwwserver\inetpub\wwwroot
+/d g:\web
+/n Full WWW copy
+-e lnk, csv, tmp
+-f @Recycle, $RECYCLE.BIN, Salnikov, TMP, Userfiles
+-n \~\$
+/w b_full

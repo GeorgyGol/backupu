@@ -1,0 +1,7 @@
+/s \\L26-1312a7\E
+/d g:\saln
+/n Full SALN copy
+-e lnk, dat, csv, tmp, avi, mpeg, mp3, mpg
+-f @Recycle, $RECYCLE.BIN, _XLS
+-n \~\$
+/w copy

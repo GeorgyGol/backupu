@@ -1,0 +1,7 @@
+/s \\L26-1312B7\e$
+/d g:\GALIMOV
+/n GALIMOV copy
+-e lnk, tmp
+-f @Recycle, $RECYCLE.BIN, 1f2603bbcbe72c26698880dda513bcc1
+-n \~\$
+/w copy

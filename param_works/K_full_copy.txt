@@ -1,0 +1,7 @@
+/s K:
+/d g:\k
+/n Full K copy
+-e lnk, dat, csv, tmp
+-f @Recycle, $RECYCLE.BIN
+-n \~\$
+/w copy

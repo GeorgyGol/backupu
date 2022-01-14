@@ -1,0 +1,7 @@
+/s \\Commd\P_CMASFProject
+/d g:\p_b
+/n Increment P backup
+-e tmp, xml, csv, lnk
+-f @Recycle
+-n \~\$
+/w b_inc

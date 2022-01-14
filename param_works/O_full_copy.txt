@@ -1,0 +1,7 @@
+/s \\Commd\O_CMASFCommon
+/d g:\o
+/n Full O copy
+-e lnk, dat, csv, tmp
+-f @Recycle
+-n \~\$
+/w copy

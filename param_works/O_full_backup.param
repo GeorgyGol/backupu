@@ -1,0 +1,7 @@
+/s \\Commd\O_CMASFCommon
+/d g:\O
+/n Full O backup
+-e lnk, dat, csv, tmp
+-f @Recycle
+-n \~\$
+/w b_full

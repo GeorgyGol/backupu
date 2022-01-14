@@ -1,0 +1,7 @@
+/s \\Commd\Statistica
+/d g:\s
+/n Full S copy
+-e lnk
+-f @Recycle
+-n \~\$
+/w copy

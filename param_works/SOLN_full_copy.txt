@@ -1,0 +1,7 @@
+/s \\L26-1305-3w7\d$\SOLN
+/d g:\soln
+/n Full SOLN copy
+-e lnk, dat, csv, tmp, avi, mpeg, mp3, mpg
+-f @Recycle, $RECYCLE.BIN, _XLS
+-n \~\$
+/w copy
