@@ -73,10 +73,11 @@
       <file leaf-file-name="scan.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cmdl_backpz/scan.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-187">
-              <caret line="43" column="36" lean-forward="false" selection-start-line="43" selection-start-column="36" selection-end-line="43" selection-end-column="36" />
+            <state relative-caret-position="289">
+              <caret line="72" column="34" lean-forward="true" selection-start-line="72" selection-start-column="34" selection-end-line="72" selection-end-column="34" />
               <folding>
-                <element signature="e#281#293#0" expanded="true" />
+                <element signature="e#370#382#0" expanded="true" />
+                <element signature="e#2393#3424#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -85,8 +86,8 @@
       <file leaf-file-name="test_xScan.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cmdl_backpz/test_xScan.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="128">
-              <caret line="8" column="43" lean-forward="false" selection-start-line="8" selection-start-column="43" selection-end-line="8" selection-end-column="43" />
+            <state relative-caret-position="384">
+              <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -97,10 +98,15 @@
       <file leaf-file-name="filters.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cmdl_backpz/filters.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="128">
-              <caret line="8" column="0" lean-forward="true" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+            <state relative-caret-position="320">
+              <caret line="121" column="13" lean-forward="false" selection-start-line="121" selection-start-column="6" selection-end-line="121" selection-end-column="15" />
               <folding>
-                <element signature="e#0#21#0" expanded="true" />
+                <element signature="e#1436#1518#0" expanded="false" />
+                <element signature="e#1553#1632#0" expanded="false" />
+                <element signature="e#1664#1686#0" expanded="false" />
+                <element signature="e#1719#1742#0" expanded="false" />
+                <element signature="e#5409#6659#0" expanded="false" />
+                <element signature="e#6693#7368#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -128,9 +134,9 @@
       <list>
         <option value="$PROJECT_DIR$/filters.py" />
         <option value="$PROJECT_DIR$/cmdl_backpz/new_folder.py" />
-        <option value="$PROJECT_DIR$/cmdl_backpz/scan.py" />
         <option value="$PROJECT_DIR$/cmdl_backpz/test_xScan.py" />
         <option value="$PROJECT_DIR$/cmdl_backpz/filters.py" />
+        <option value="$PROJECT_DIR$/cmdl_backpz/scan.py" />
       </list>
     </option>
   </component>
@@ -165,6 +171,8 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -191,8 +199,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scratches" />
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -217,7 +223,21 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.filters">
+  <component name="RunManager" selected="Python.scan">
+    <configuration name="Unittests for test_xScan.TestXScan" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cmdl_backpz" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="backupz" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_xScan.TestXScan&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+    </configuration>
     <configuration name="Unittests for test_xScan.TestXScan.test_scan" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -230,6 +250,20 @@
       <module name="backupz" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;test_xScan.TestXScan.test_scan&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+    </configuration>
+    <configuration name="Unittests for test_xScan.TestXScan.test_scan_filter_allpath" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cmdl_backpz" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="backupz" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_xScan.TestXScan.test_scan_filter_allpath&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     </configuration>
     <configuration name="Unittests in test_xScan.py" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
@@ -245,42 +279,6 @@
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/cmdl_backpz/test_xScan.py&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
-    </configuration>
-    <configuration name="filters" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cmdl_backpz" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="backupz" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cmdl_backpz/filters.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-    </configuration>
-    <configuration name="new_folder" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/cmdl_backpz" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="backupz" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/cmdl_backpz/new_folder.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
     <configuration name="scan" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -301,19 +299,19 @@
       <option name="EMULATE_TERMINAL" value="false" />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="Python.filters" />
-      <item index="1" class="java.lang.String" itemvalue="Python.new_folder" />
-      <item index="2" class="java.lang.String" itemvalue="Python.scan" />
-      <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in test_xScan.py" />
+      <item index="0" class="java.lang.String" itemvalue="Python.scan" />
+      <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in test_xScan.py" />
+      <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan" />
+      <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan.test_scan_filter_allpath" />
       <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan.test_scan" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.filters" />
-        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in test_xScan.py" />
-        <item index="2" class="java.lang.String" itemvalue="Python.scan" />
-        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan.test_scan" />
-        <item index="4" class="java.lang.String" itemvalue="Python.new_folder" />
+        <item index="0" class="java.lang.String" itemvalue="Python.scan" />
+        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan.test_scan_filter_allpath" />
+        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan.test_scan" />
+        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in test_xScan.py" />
+        <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests for test_xScan.TestXScan" />
       </list>
     </recent_temporary>
   </component>
@@ -342,20 +340,17 @@
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Unittests_for_test_xScan_TestXScan_test_scan - 2022.01.25 at 14h 27m 49s.xml">
+    <history-entry file="Unittests_for_test_xScan_TestXScan - 2022.01.25 at 19h 58m 14s.xml">
+      <configuration name="Unittests for test_xScan.TestXScan" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_for_test_xScan_TestXScan_test_scan - 2022.01.25 at 20h 00m 26s.xml">
       <configuration name="Unittests for test_xScan.TestXScan.test_scan" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 14h 25m 22s.xml">
-      <configuration name="Unittests in test_xScan.py" configurationId="tests" />
+    <history-entry file="Unittests_for_test_xScan_TestXScan_test_scan_filter_allpath - 2022.01.25 at 19h 59m 59s.xml">
+      <configuration name="Unittests for test_xScan.TestXScan.test_scan_filter_allpath" configurationId="tests" />
     </history-entry>
-    <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 14h 28m 12s.xml">
-      <configuration name="Unittests in test_xScan.py" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 14h 28m 57s.xml">
-      <configuration name="Unittests in test_xScan.py" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 14h 29m 32s.xml">
-      <configuration name="Unittests in test_xScan.py" configurationId="tests" />
+    <history-entry file="Unittests_for_test_xScan_TestXScan_test_scan_filter_allpath - 2022.01.25 at 20h 00m 30s.xml">
+      <configuration name="Unittests for test_xScan.TestXScan.test_scan_filter_allpath" configurationId="tests" />
     </history-entry>
     <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 15h 13m 00s.xml">
       <configuration name="Unittests in test_xScan.py" configurationId="tests" />
@@ -370,6 +365,9 @@
       <configuration name="Unittests in test_xScan.py" configurationId="tests" />
     </history-entry>
     <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 15h 25m 13s.xml">
+      <configuration name="Unittests in test_xScan.py" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_test_xScan_py - 2022.01.25 at 20h 00m 21s.xml">
       <configuration name="Unittests in test_xScan.py" configurationId="tests" />
     </history-entry>
   </component>
@@ -414,10 +412,22 @@
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager />
+    <breakpoint-manager>
+      <option name="time" value="1" />
+    </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/cmdl_backpz/test_xScan.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="96">
+          <caret line="8" column="24" lean-forward="true" selection-start-line="8" selection-start-column="24" selection-end-line="8" selection-end-column="24" />
+          <folding>
+            <element signature="e#0#35#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/cmdl_backpz/actions.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3600">
@@ -467,7 +477,8 @@
         <state relative-caret-position="1472">
           <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
           <folding>
-            <element signature="e#281#293#0" expanded="true" />
+            <element signature="e#370#382#0" expanded="true" />
+            <element signature="e#2393#3424#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -477,7 +488,12 @@
         <state relative-caret-position="7184">
           <caret line="456" column="19" lean-forward="true" selection-start-line="456" selection-start-column="19" selection-end-line="456" selection-end-column="19" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#1436#1518#0" expanded="false" />
+            <element signature="e#1553#1632#0" expanded="false" />
+            <element signature="e#1664#1686#0" expanded="false" />
+            <element signature="e#1719#1742#0" expanded="false" />
+            <element signature="e#5409#6659#0" expanded="false" />
+            <element signature="e#6693#7368#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -531,7 +547,8 @@
         <state relative-caret-position="1472">
           <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
           <folding>
-            <element signature="e#281#293#0" expanded="true" />
+            <element signature="e#370#382#0" expanded="true" />
+            <element signature="e#2393#3424#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -541,7 +558,12 @@
         <state relative-caret-position="7472">
           <caret line="474" column="22" lean-forward="false" selection-start-line="474" selection-start-column="4" selection-end-line="475" selection-end-column="42" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#1436#1518#0" expanded="false" />
+            <element signature="e#1553#1632#0" expanded="false" />
+            <element signature="e#1664#1686#0" expanded="false" />
+            <element signature="e#1719#1742#0" expanded="false" />
+            <element signature="e#5409#6659#0" expanded="false" />
+            <element signature="e#6693#7368#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -585,7 +607,8 @@
         <state relative-caret-position="1472">
           <caret line="94" column="0" lean-forward="false" selection-start-line="94" selection-start-column="0" selection-end-line="94" selection-end-column="0" />
           <folding>
-            <element signature="e#281#293#0" expanded="true" />
+            <element signature="e#370#382#0" expanded="true" />
+            <element signature="e#2393#3424#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -595,7 +618,12 @@
         <state relative-caret-position="7472">
           <caret line="474" column="22" lean-forward="false" selection-start-line="474" selection-start-column="4" selection-end-line="475" selection-end-column="42" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#1436#1518#0" expanded="false" />
+            <element signature="e#1553#1632#0" expanded="false" />
+            <element signature="e#1664#1686#0" expanded="false" />
+            <element signature="e#1719#1742#0" expanded="false" />
+            <element signature="e#5409#6659#0" expanded="false" />
+            <element signature="e#6693#7368#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -900,8 +928,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cmdl_backpz/test_xScan.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="128">
-          <caret line="8" column="43" lean-forward="false" selection-start-line="8" selection-start-column="43" selection-end-line="8" selection-end-column="43" />
+        <state relative-caret-position="384">
+          <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
           <folding>
             <element signature="e#0#35#0" expanded="true" />
           </folding>
@@ -910,20 +938,26 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cmdl_backpz/scan.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-187">
-          <caret line="43" column="36" lean-forward="false" selection-start-line="43" selection-start-column="36" selection-end-line="43" selection-end-column="36" />
+        <state relative-caret-position="289">
+          <caret line="72" column="34" lean-forward="true" selection-start-line="72" selection-start-column="34" selection-end-line="72" selection-end-column="34" />
           <folding>
-            <element signature="e#281#293#0" expanded="true" />
+            <element signature="e#370#382#0" expanded="true" />
+            <element signature="e#2393#3424#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cmdl_backpz/filters.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="128">
-          <caret line="8" column="0" lean-forward="true" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+        <state relative-caret-position="320">
+          <caret line="121" column="13" lean-forward="false" selection-start-line="121" selection-start-column="6" selection-end-line="121" selection-end-column="15" />
           <folding>
-            <element signature="e#0#21#0" expanded="true" />
+            <element signature="e#1436#1518#0" expanded="false" />
+            <element signature="e#1553#1632#0" expanded="false" />
+            <element signature="e#1664#1686#0" expanded="false" />
+            <element signature="e#1719#1742#0" expanded="false" />
+            <element signature="e#5409#6659#0" expanded="false" />
+            <element signature="e#6693#7368#0" expanded="false" />
           </folding>
         </state>
       </provider>

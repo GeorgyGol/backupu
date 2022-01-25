@@ -1,3 +1,30 @@
+"""
+definitions for classes of filters for filtering scanned files list from class xScan (module scan this project)
+all these classes is supposed to be used in the class xScan to filter the list obtained when scanning by
+this class - a list of dictionaries with file attributes (name, full path, date, size, etc.)
+
+    ONE RULE = ONE FILTER
+
+    all filters based on abstract class abcFilter;
+    filters can be BLACK or WHITE: White means 'only selected rules', Black means 'all but selected rules'
+    WHITE filters applyes first
+
+    filters in this module are:
+       on file name - by re
+       on file path - by re
+       on dir path - by re
+       on file extension - by re
+       on file size - exactly or range
+       on file date - exactly or range
+       on os windows specific archive file attrib
+
+    all filters have function 'check' that have one param 'item': checks for compliance item with the filter rule
+    for filtering specific xScan file list all filters have function 's_check' that have one param 'item':
+                checks for compliance named item (dict item) with the filter rule
+
+    usage filter object on list of some items like this:
+        result_filtering = list(filter(x_filter.check, items_list))
+"""
 import datetime as dt
 import operator as op
 import os
@@ -5,63 +32,77 @@ import pathlib
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from enum import Enum, auto
+
+from enum import Enum#, auto
 
 class filter_type(Enum):
-    PATH = auto()
-    DIR = auto()
-    FILE = auto()
-    ATTRIB = auto()
-    DATE = auto()
-    SIZE = auto()
+    PATH = 1 #auto()
+    DIR = 2
+    FILE = 3
+    ATTRIB = 4
+    DATE = 5
+    SIZE = 6
 
 
 class filter_subtype(Enum):
-    NAME = auto()
-    EXT = auto()
-    DATE_MARGIN = auto()
-    SIZE_MARGIN = auto()
-    DATE_EXACT = auto()
+    NAME = 1
+    EXT = 2
+    DATE_MARGIN = 3
+    SIZE_MARGIN = 4
+    DATE_EXACT = 5
 
 
 class string_case(Enum):
-    STRICT = auto()
-    ANY = auto()
+    STRICT = 1
+    ANY = 2
 
 
 class filter_color(Enum):
-    WHITE = auto()
-    BLACK = auto()
+    WHITE = 1
+    BLACK = 2
 
 
 class abcFilter(ABC):
-
-    def __init__(self, color=filter_color.WHITE):
+    """  base class for all filters  """
+    def __init__(self, color:filter_color=filter_color.WHITE):
         assert isinstance(color, filter_color)
         self._color = color
 
     @property
-    def type(self):
+    def type(self)->filter_type:
         return self._type
 
     @property
-    def subtype(self):
+    def subtype(self)->filter_subtype:
         return self._subtype
 
     @property
-    def color(self):
+    def color(self)->filter_color:
         return self._color
 
     @abstractmethod
     def _compile(self):
+        """
+        compile filter rule - commonly filter re-expression
+        """
         pass
 
     @abstractmethod
-    def check(self, item):
+    def check(self, item:str)->bool:
+        """
+        function for make filtering - apply rule to item and return bool result filtering
+        :param item:
+        :return: filtering result
+        """
         pass
 
     @abstractmethod
-    def s_check(self, item):
+    def s_check(self, item:dict)->bool:
+        """
+        function for make filtering - apply rule to item and return bool result filtering
+        :param item: dict with file properties from xScan.scan()
+        :return: filtering result
+        """
         pass
 
     @property
@@ -69,14 +110,31 @@ class abcFilter(ABC):
         return self._rules
 
     def __str__(self):
-        return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rules = {self.rules}'
+        # for python 3.10 ->
+        # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rules = {self.rules}'
+
+        _s = '{color} filter on {type} ({subtype}); rules = {rules}'
+        return _s.format(color = self.color.name, type = self.type.name,
+                         subtype = self.subtype.name, rules = self.rules)
 
 
 # file path-names filters - using re
 class fFilePath(abcFilter):
+    """
+    class for filter on file path and name, working on item['path'] scanned file list, for rule use re-eexpressions
+    base class for filtering on name, dirs and extension classes
+    """
 
     def __init__(self, color=filter_color.BLACK, subtype=filter_subtype.EXT,
-                 case=string_case.STRICT, rules=set()):
+                 case=string_case.STRICT, rules:str='', start_position:int=0):
+        """
+
+        :param color: BLACK or WHITE for 'only but' or 'only' items
+        :param subtype: name | dir | ext part of full file name
+        :param case: case sensivity (key (?i) in re)
+        :param rules: re-eexpression for filtering
+        :param start_position: starting position for re-search
+        """
         assert isinstance(subtype, filter_subtype)
         assert isinstance(case, string_case)
 
@@ -86,26 +144,31 @@ class fFilePath(abcFilter):
         self._subtype = subtype
         self._case = case
 
-        if isinstance(rules, str):
-            self._rules = set(filter(lambda x: x != '', re.split(r'[ ,;]+', rules)))
-        else:
-            self._rules = set(rules)
+        self._rules = rules
+        self._str_pre = '(?i)' if self.case == string_case.ANY else ''
 
-        if self.case == string_case.ANY:
-            self._rules = set(map(str.lower, self._rules))
+        self._search = '' # prepared and compiled re-object
+        self._start_position = start_position
 
         self._compile()
+
+        if self.color == filter_color.BLACK:
+            self._check_func = lambda item: self._search.search(item) is None
+        else:
+            self._check_func = lambda item: self._search.search(item) is not None
 
     @property
     def case(self):
+        """
+        :return: filter case-sensivity
+        """
         return self._case
 
     def __str__(self):
-        return super().__str__() + f'; string case: {self.case.name}'
-
-    def add_rule(self, rule):
-        self._rules.add(rule)
-        self._compile()
+        # for Python 3.10 ->
+        # return super().__str__() + f'; string case: {self.case.name}'
+        _s = '; string case: {case}'
+        return super().__str__() + _s.format(case = self.case.name)
 
     def check(self, item):
         return self._check_func(item)
@@ -113,14 +176,9 @@ class fFilePath(abcFilter):
     def s_check(self, item):
         return self._check_func(item['path'])
 
-    def _make_re(self, strRE):
-        if self.case == string_case.ANY:
-            str_pre = '(?i)'
-        else:
-            str_pre = ''
-
-        strF = str_pre + strRE
-        self._search = re.compile(strF)
+    def _compile(self):
+        strF = self._str_pre + self._rules
+        self._search = re.compile(strF, self._start_position)
         return self._search
 
 
@@ -145,11 +203,12 @@ class fFileName(fFilePath):
     def _compile(self):
         if self.subtype == filter_subtype.EXT:
             # поиск по расширениям файлов
-            strF = '\.' + '|'.join(set(map(lambda x: f'({x})', self.rules))) + '$'
+
+            strF = '\.' + '|'.join(set(map(lambda x: str(x), self.rules))) + '$'
             self._make_re(strF)
         else:  # self.subtype == filter_subtype.NAME:
             # поиск по именам файлов
-            strF = '|'.join(set(map(lambda x: f'({x})', self.rules)))
+            strF = '|'.join(set(map(lambda x: str(x), self.rules)))
             self._make_re(strF)
 
 
@@ -166,7 +225,7 @@ class fDirName(fFilePath):
 
     def _compile(self):
         # поиск по имени в полном пути, начиная с начала (с корня)
-        strF = '|'.join(set(map(lambda x: f'({x})', self.rules)))
+        strF = '|'.join(set(map(lambda x: str(x), self.rules)))
         self._make_re(strF)
 
 
@@ -384,118 +443,64 @@ class fArchAttrib(abcFilter):
 
 # ====== end attributes's filters
 
-
-lst_test = ['/home/egor/git/jupyter/geckodriver.log',
-            '/home/egor/git/jupyter/housing_model16072021.zip',
-            '/home/egor/git/jupyter/ghostdriver.log',
-            '/home/egor/git/jupyter/housing_model.zip',
-            '/home/egor/git/jupyter/inn_1.txt',
-            '/home/egor/git/jupyter/Rosstat.ipynb',
-            '/home/egor/git/jupyter/employed_pers_pars/osn-11-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/osn-12-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/output20.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/output08_20.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/Без названия1.ipynb',
-            '/home/egor/git/jupyter/employed_pers_pars/output07_20.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/output21.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/output20_1.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/output18.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/output19.xlsx',
-            '/home/egor/git/jupyter/employed_pers_pars/Без названия.ipynb',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-10-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-11-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-12-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-08-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-04-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/Новости статистики Росстат перешел на 2018 базисный год.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-02-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-09-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/О международных сопоставлениях ВВП за 2014 год.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-07-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-05-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-03-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-06-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/OSN-2020/osn-01-2020.pdf',
-            '/home/egor/git/jupyter/employed_pers_pars/.ipynb_checkpoints/Без названия1-checkpoint.ipynb',
-            "/home/egor/git/jupyter/employed_pers_pars/.ipynb_checkpoints/Без названия-checkpoint.ipynb",
-            '/home/egor/git/jupyter/HT/Data_ru/Р-1/Р-14.txt',
-            '/home/egor/git/jupyter/HT/Data_ru/Р-1/Р-1-1.txt',
-            '/home/egor/git/jupyter/HT/Data_ru/Р-1/Р-1-8.txt',
-            '/home/egor/git/jupyter/HT/Data_ru/Р-1/Р-1-4.txt',
-            '/home/egor/git/jupyter/HT/Data_ru/Р-1/Р-18.txt',
-            '/home/egor/git/jupyter/HT/Data_ru/Р-1/Р-12.txt',
-            '/home/egor/git/jupyter/rf-stat-build&modern-xml/.git/COMMIT_EDITMSG',
-            '/home/egor/git/jupyter/rf-stat-build&modern-xml/.git/logs/HEAD',
-            '/home/egor/git/jupyter/rf-stat-build&modern-xml/.git/logs/refs/heads/master',
-            '/home/egor/git/jupyter/rf-stat-build&modern-xml/.git/objects/ea/6f66620412046c6eab99ff662f41e977e74767',
-            '/home/egor/git/jupyter/rf-stat-build&modern-xml/.git/objects/46/2de57cd3f2bc95a4f02c3679070ce975b96fd6',
-            '/home/egor/git/jupyter/rf-stat-build&modern-xml/.git/objects/b9/e714f98f57258ef608f3f56d1ec2307db0c4f6',
-            '/home/egor/git/jupyter/CorrBanks/Base/step/jur_corr.csv',
-            '/home/egor/git/jupyter/CorrBanks/Base/step/cenbum_corr.csv',
-            '/home/egor/git/jupyter/CorrBanks/Base/step/banki.xlsb',
-            '/home/egor/git/jupyter/CorrBanks/Base/step/banki.xlsx',
-            '/home/egor/git/jupyter/CorrBanks/Base/step/pmbk_corr.csv',
-            '/home/egor/git/jupyter/CorrBanks/Base/step/banki.xls']
-
-
-def fdate():
-    # for i in lst_test:
-    #     st = os.stat(i)
-    #     print(i, st.st_size, dt.datetime.fromtimestamp(st.st_mtime))
-    fdt1 = fFileDate(color=filter_color.WHITE,
-                     low_date=dt.date(year=2020, month=1, day=1))
-
-    print(fdt1)
-    # print(fdt1.check(dt.date(year=2021, month=1, day=1)))
-    lt1 = list(filter(fdt1.check, lst_test))
-
-    for i in lt1:
-        st = os.stat(i)
-        print(i, dt.datetime.fromtimestamp(st.st_mtime).date())
-
-    print('*' * 50)
-
-    fdt2 = fFileDateExact(color=filter_color.WHITE, check_date=dt.date(year=2021, month=4, day=12))
-    print(fdt2)
-
-    lt2 = list(filter(fdt2.check, lst_test))
-    for i in lt2:
-        st = os.stat(i)
-        print(i, dt.datetime.fromtimestamp(st.st_mtime).date())
-    # print(fdt2.check(dt.datetime(year=2021, month=1, day=1)))
-
-
-def main():
-    fp1 = fFileName(rules=r'\w+', color=filter_color.BLACK, subtype=filter_subtype.EXT)
-    # fp1.add_rule('ipynb')
-    # fp1.add_rule('xls[xbm]?')
-    # fp1.add_rule(r'ipynb')
-
-    print(fp1._search)
-    lt = list(filter(fp1.check, lst_test))
-    for i in lt:
-        print(i)
-
-    # for i in lst_test:
-    #     print(i, fp1.check(i))
-
-    print('-' * 50)
-    fp2 = fDirName(rules=r'OSN-2020, \.', color=filter_color.WHITE)
-    print(fp2._search)
-
-    lt = list(filter(fp2.check, lst_test))
-    for i in lt:
-        print(i)
-
-    # for i in lst_test:
-    #     print(i, fp2.check(i))
-
-    print(fp1)
-    print(fp2)
-    print('main done')
-
-
-if __name__ == '__main__':
-    # main()
-    fdate()
-    print('All done.')
+# def fdate():
+#     # for i in lst_test:
+#     #     st = os.stat(i)
+#     #     print(i, st.st_size, dt.datetime.fromtimestamp(st.st_mtime))
+#     fdt1 = fFileDate(color=filter_color.WHITE,
+#                      low_date=dt.date(year=2020, month=1, day=1))
+#
+#     print(fdt1)
+#     # print(fdt1.check(dt.date(year=2021, month=1, day=1)))
+#     lt1 = list(filter(fdt1.check, lst_test))
+#
+#     for i in lt1:
+#         st = os.stat(i)
+#         print(i, dt.datetime.fromtimestamp(st.st_mtime).date())
+#
+#     print('*' * 50)
+#
+#     fdt2 = fFileDateExact(color=filter_color.WHITE, check_date=dt.date(year=2021, month=4, day=12))
+#     print(fdt2)
+#
+#     lt2 = list(filter(fdt2.check, lst_test))
+#     for i in lt2:
+#         st = os.stat(i)
+#         print(i, dt.datetime.fromtimestamp(st.st_mtime).date())
+#     # print(fdt2.check(dt.datetime(year=2021, month=1, day=1)))
+#
+#
+# def main():
+#     fp1 = fFileName(rules=r'\w+', color=filter_color.BLACK, subtype=filter_subtype.EXT)
+#     # fp1.add_rule('ipynb')
+#     # fp1.add_rule('xls[xbm]?')
+#     # fp1.add_rule(r'ipynb')
+#
+#     print(fp1._search)
+#     lt = list(filter(fp1.check, lst_test))
+#     for i in lt:
+#         print(i)
+#
+#     # for i in lst_test:
+#     #     print(i, fp1.check(i))
+#
+#     print('-' * 50)
+#     fp2 = fDirName(rules=r'OSN-2020, \.', color=filter_color.WHITE)
+#     print(fp2._search)
+#
+#     lt = list(filter(fp2.check, lst_test))
+#     for i in lt:
+#         print(i)
+#
+#     # for i in lst_test:
+#     #     print(i, fp2.check(i))
+#
+#     print(fp1)
+#     print(fp2)
+#     print('main done')
+#
+#
+# if __name__ == '__main__':
+#     # main()
+#     fdate()
+#     print('All done.')
