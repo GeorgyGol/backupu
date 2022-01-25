@@ -1,17 +1,19 @@
 """
-The module contains classes for scanning the selected operating system directory (including shared network) and filters for scanned files
+The module contains classes for scanning the selected operating system directory (including shared network) and filters
+for scanned files
 Files are scanned into a list with full names (including paths)
 Filters inherit from an abstract class.
 The module has 4 main filters
 """
 
 import errno
-
-from cmdl_backpz.filters import *
-
+import platform
+import os
+import subprocess
+import datetime as dt
+# from cmdl_backpz.filters import *
 
 class xScan():
-
     def __init__(self, start_path=os.getcwd()):
         if os.path.isdir(start_path):
             self._base_path = start_path
@@ -21,6 +23,9 @@ class xScan():
 
     @property
     def base_path(self):
+        """
+        :return:  self._base_path - source working path
+        """
         return self._base_path
 
     def _filtered_files(self):
@@ -42,14 +47,19 @@ class xScan():
         else:
             return self._lst_files
 
-    def scan(self, with_info=True):
+    def scan(self)->list:
+        """
+        scan source base path and making list of files
+        :return: list of files with file info (full name + attribs)
+        """
         def info(item):
             st = os.stat(item)
             # x = dt.datetime.fromtimestamp(st.st_mtime).date()
             try:
                 if platform.system() == 'Windows':
                     xr = subprocess.check_output(['attrib', item])
-                    isA = self._check_func(chr(xr[0]), 'A')
+                    # isA = self._check_func(chr(xr[0]), 'A')
+                    isA = False
                 else:
                     isA = False
             except IndexError:
@@ -60,13 +70,8 @@ class xScan():
                     'size': st.st_size, 'mode': st.st_mode, 'ext': item.split('.')[-1], 'A-attr': isA}
 
         lstd = [[os.path.join(i[0], f) for f in i[2]] for i in os.walk(self.base_path)]
-        if with_info:
-            self._lst_files = [info(item) for sublist in lstd for item in sublist]
-        else:
-            self._lst_files = [item for sublist in lstd for item in sublist]
+        self._lst_files = [info(item) for sublist in lstd for item in sublist]
 
-        # for i in self._lst_files:
-        #     print(i)
         return self._lst_files
 
     @property
@@ -95,12 +100,13 @@ class xScan():
 
 def scan():
     # sc = xScan(start_path='/home/egor/git/jupyter')
-    sc = xScan(start_path='/media/egor/docs')
-    fPath = fDirName(color=filter_color.WHITE, rules={'Reelroad', 'Norah Jones'})
-    fName = fFileName(rules='\d+', subtype=filter_subtype.NAME)
-    fExt = fFileName(rules='mp3', color=filter_color.WHITE)
-
-    sc.set_filters(fPath, fExt, fName)
+    sc = xScan()
+    print(sc.base_path)
+    # fPath = fDirName(color=filter_color.WHITE, rules={'Reelroad', 'Norah Jones'})
+    # fName = fFileName(rules='\d+', subtype=filter_subtype.NAME)
+    # fExt = fFileName(rules='mp3', color=filter_color.WHITE)
+    #
+    # sc.set_filters(fPath, fExt, fName)
 
     sc.scan()
     for f in sc.filters:
@@ -116,7 +122,7 @@ if __name__ == "__main__":
     #     print("not yet, mounting...")
     #     os.system("mount smb://commd.local/personal/Golyshev")
 
-    scan()
+    print(scan())
     # ft=x_ge_change_date(days_num=20)
     #
     # flst=FileList(r'U:\Solntsev\4site\New')

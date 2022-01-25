@@ -7,7 +7,6 @@ import subprocess
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 
-
 class filter_type(Enum):
     PATH = auto()
     DIR = auto()

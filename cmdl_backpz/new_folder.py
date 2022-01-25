@@ -65,10 +65,5 @@ def check_folder_class():
 
 if __name__ == '__main__':
     # check_folder_class()
-    import math
 
-    # for i in range(500000):
-    #     print(math.factorial(i))
-    x = math.factorial(1e6)
-    print(x)
     print('All done.')
