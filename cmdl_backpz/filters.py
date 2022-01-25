@@ -106,45 +106,41 @@ class abcFilter(ABC):
         pass
 
     @property
-    def rules(self):
-        return self._rules
+    def rule(self):
+        return self._rule
 
     def __str__(self):
         # for python 3.10 ->
-        # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rules = {self.rules}'
+        # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rule = {self.rule}'
 
-        _s = '{color} filter on {type} ({subtype}); rules = {rules}'
+        _s = '{color} filter on {type} ({subtype}); rule = {rule}'
         return _s.format(color = self.color.name, type = self.type.name,
-                         subtype = self.subtype.name, rules = self.rules)
+                         subtype = self.subtype.name, rule = self.rule)
 
 
 # file path-names filters - using re
 class fFilePath(abcFilter):
     """
-    class for filter on file path and name, working on item['path'] scanned file list, for rule use re-eexpressions
+    class for filter on file path and name, working on item['path'] scanned file list, for rule use re-expressions
     base class for filtering on name, dirs and extension classes
     """
 
-    def __init__(self, color=filter_color.BLACK, subtype=filter_subtype.EXT,
-                 case=string_case.STRICT, rules:str='', start_position:int=0):
+    def __init__(self, color=filter_color.BLACK,
+                 case=string_case.STRICT, rule:str='', start_position:int=0):
         """
-
         :param color: BLACK or WHITE for 'only but' or 'only' items
-        :param subtype: name | dir | ext part of full file name
         :param case: case sensivity (key (?i) in re)
-        :param rules: re-eexpression for filtering
+        :param rules: re-expression for filtering
         :param start_position: starting position for re-search
         """
-        assert isinstance(subtype, filter_subtype)
         assert isinstance(case, string_case)
 
         super().__init__(color=color)
 
         self._type = filter_type.PATH
-        self._subtype = subtype
         self._case = case
 
-        self._rules = rules
+        self._rule = rule
         self._str_pre = '(?i)' if self.case == string_case.ANY else ''
 
         self._search = '' # prepared and compiled re-object
@@ -177,7 +173,7 @@ class fFilePath(abcFilter):
         return self._check_func(item['path'])
 
     def _compile(self):
-        strF = self._str_pre + self._rules
+        strF = self._str_pre + self._rule
         self._search = re.compile(strF, self._start_position)
         return self._search
 
@@ -185,8 +181,8 @@ class fFilePath(abcFilter):
 class fFileName(fFilePath):
 
     def __init__(self, color=filter_color.BLACK, subtype=filter_subtype.EXT,
-                 case=string_case.STRICT, rules=set()):
-        super().__init__(color=color, subtype=subtype, case=case, rules=rules)
+                 case=string_case.STRICT, rule=set()):
+        super().__init__(color=color, subtype=subtype, case=case, rule=rule)
         self._type = filter_type.FILE
 
         if self.subtype == filter_subtype.EXT:
@@ -204,18 +200,18 @@ class fFileName(fFilePath):
         if self.subtype == filter_subtype.EXT:
             # поиск по расширениям файлов
 
-            strF = '\.' + '|'.join(set(map(lambda x: str(x), self.rules))) + '$'
+            strF = '\.' + '|'.join(set(map(lambda x: str(x), self.rule))) + '$'
             self._make_re(strF)
         else:  # self.subtype == filter_subtype.NAME:
             # поиск по именам файлов
-            strF = '|'.join(set(map(lambda x: str(x), self.rules)))
+            strF = '|'.join(set(map(lambda x: str(x), self.rule)))
             self._make_re(strF)
 
 
 class fDirName(fFilePath):
     def __init__(self, color=filter_color.BLACK,
-                 case=string_case.STRICT, rules=set()):
-        super().__init__(color=color, subtype=filter_subtype.NAME, case=case, rules=rules)
+                 case=string_case.STRICT, rule=set()):
+        super().__init__(color=color, subtype=filter_subtype.NAME, case=case, rule=rule)
         self._type = filter_type.DIR
 
         if self.color == filter_color.BLACK:
@@ -225,7 +221,7 @@ class fDirName(fFilePath):
 
     def _compile(self):
         # поиск по имени в полном пути, начиная с начала (с корня)
-        strF = '|'.join(set(map(lambda x: str(x), self.rules)))
+        strF = '|'.join(set(map(lambda x: str(x), self.rule)))
         self._make_re(strF)
 
 
@@ -316,7 +312,7 @@ class fFileSize(fAbcRange):
         self._subtype = filter_subtype.SIZE_MARGIN
 
     @property
-    def rules(self):
+    def rule(self):
         return {'low_size': self.low_level, 'hight_size': self.hight_level,
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
@@ -368,7 +364,7 @@ class fFileDate(fAbcRange):
         self.hight_level = hdate or dt.date(year=2270, month=1, day=1)
 
     @property
-    def rules(self):
+    def rule(self):
         return {'low_date': self.low_date.strftime('%Y-%m-%d'), 'hight_date': self.hight_date.strftime('%Y-%m-%d'),
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
@@ -407,7 +403,7 @@ class fFileDateExact(abcFilter):
         self._check_date = cdate
 
     @property
-    def rules(self):
+    def rule(self):
         return self.check_date.strftime('%Y-%m-%d')
 
 
@@ -437,7 +433,7 @@ class fArchAttrib(abcFilter):
         return item['isA']
 
     @property
-    def rules(self):
+    def rule(self):
         return 'A-attribute'
 
 

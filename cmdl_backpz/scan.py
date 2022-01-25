@@ -16,10 +16,6 @@ import os
 import subprocess
 import datetime as dt
 
-# import sys
-# v_info = sys.version_info
-# print(v_info[0], v_info[1])
-
 from cmdl_backpz.filters import *
 
 class xScan():
@@ -139,8 +135,6 @@ class xScan():
         return len(self.files(filtered=filtered))
 
 
-
-
 def scan():
     # sc = xScan(start_path='/home/egor/git/jupyter')
     # sc = xScan(start_path=r'U:\Golyshev\Py')
@@ -156,8 +150,8 @@ def scan():
     #
     # sc.set_filters(fPathW, fPathB)
     filters = [
-        fFilePath(color=filter_color.WHITE, case=string_case.STRICT, rules=r'\.py\b', start_position=start_pos),
-        fFilePath(color=filter_color.BLACK, case=string_case.STRICT, rules=r'\\__init__', start_position=start_pos)
+        fFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py\b', start_position=start_pos),
+        fFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\__init__', start_position=start_pos)
     ]
     sc.set_filters(*filters)
     sc.scan()
