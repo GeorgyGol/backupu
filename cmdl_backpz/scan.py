@@ -12,9 +12,6 @@ Files are scanned into a list of dictionary with full name (including paths) and
 
 import errno
 import platform
-import os
-import subprocess
-import datetime as dt
 
 from cmdl_backpz.filters import *
 
@@ -47,9 +44,6 @@ class xScan():
         htis function apply all class filter (WHITEs first) on saved all-files list and return filtered list
         :return: filtered list of files
         """
-        for f in self._filters:
-            f.start_pos = len(self._base_path)
-
         fltWhite = list(filter(lambda x: x.color == filter_color.WHITE, self._filters))
         fltBlack = list(filter(lambda x: x.color == filter_color.BLACK, self._filters))
 
@@ -131,10 +125,15 @@ def scan():
     # sc = xScan(start_path='/home/egor/git/jupyter')
     # sc = xScan(start_path=r'U:\Golyshev\Py')
     sc = xScan()
-    # print(sc.base_path)
+    print(sc.base_path)
 
     fPathW = filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\\CarSales\\')
     fPathB = filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\\.')
+
+    filters = [
+        filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py\b'),
+        filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'__init__')
+    ]
 
     fNameW = filterFileName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'_')
     fNameB = filterFileName(color=filter_color.BLACK, case=string_case.STRICT, rule=r'test')
@@ -145,7 +144,7 @@ def scan():
     lstF = [fPathW, fPathB, fNameW, fNameB, fExtW, fExtB]
 
     # sc.set_filters(*lstF)
-    sc.set_filters(fExtW, fExtB)
+    sc.set_filters(*filters)
 
     for f in sc.filters:
         print(f)
@@ -163,7 +162,7 @@ def scan():
     #     print(f['path'], _get_file_ext(f['path']))
 
     sc.print_files(filtered=True)
-    print('all files - ', sc.size(filtered=True))
+    print('all files - ', sc.size(filtered=False), 'filteres - ', sc.size(filtered=True))
 
 
 if __name__ == "__main__":
