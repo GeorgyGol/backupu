@@ -18,6 +18,7 @@ import datetime as dt
 
 from cmdl_backpz.filters import *
 
+
 class xScan():
     """
     class for scanning source dir with sub-dirs;
@@ -25,7 +26,8 @@ class xScan():
     reseive list (or item by item) of filters for files (various - based on re for file name or date, or scpec. attr
     return filtered or un-listered list of files attribs;
     """
-    def __init__(self, start_path:str=os.getcwd()):
+
+    def __init__(self, start_path: str = os.getcwd()):
         if os.path.isdir(start_path):
             self._base_path = start_path
             self._filters = list()
@@ -39,12 +41,15 @@ class xScan():
         """
         return self._base_path
 
-    def _filtered_files(self)->list:
+    def _filtered_files(self) -> list:
         """
         self.scan scanning given path, make class-internal file list, un-filterd, all-files (without empty dirs)
         htis function apply all class filter (WHITEs first) on saved all-files list and return filtered list
         :return: filtered list of files
         """
+        for f in self._filters:
+            f.start_pos = len(self._base_path)
+
         fltWhite = list(filter(lambda x: x.color == filter_color.WHITE, self._filters))
         fltBlack = list(filter(lambda x: x.color == filter_color.BLACK, self._filters))
 
@@ -57,7 +62,7 @@ class xScan():
 
         return lstFls
 
-    def files(self, filtered:bool=False)->list:
+    def files(self, filtered: bool = False) -> list:
         """
         return list of scanned files (list of dict with file attr)
         :param filtered: True - return filtered list, False - scanned
@@ -68,11 +73,12 @@ class xScan():
         else:
             return self._lst_files
 
-    def scan(self)->list:
+    def scan(self) -> list:
         """
         scan source base path and making list of files
         :return: list of files with file info (full name + attribs)
         """
+
         def info(item):
             st = os.stat(item)
             # x = dt.datetime.fromtimestamp(st.st_mtime).date()
@@ -95,37 +101,23 @@ class xScan():
         return self._lst_files
 
     @property
-    def filters(self)->list:
+    def filters(self) -> list:
         """
-
         :return: list of all filters in class
         """
         return self._filters
 
-    @filters.setter
-    def filters(self, f):
-        """
-        append param to filter-list
-        :param f: filter base on abcFilter
-        :return: None
-        """
-        assert isinstance(f, abcFilter) or (f == None)
-        if f:
-            self._filters.append(f)
-        else:
-            self._filters = list()
-
     def set_filters(self, *argc):
         """
-        append params to filter-list
+        clear filter list, setup it from params
         :param argc: filters object based on abcFilter
         :return:
         """
-        for f in argc:
-            if not isinstance(f, abcFilter):
-                raise TypeError
-        for f in argc:
-            self._filters.append(f)
+        assert len(list(
+            filter(lambda x: not isinstance(x, abcFilter), argc))) == 0, 'all params must be based on abcFilter class'
+
+        self._filters = list()
+        self._filters += argc
 
     def print_files(self, filtered=True):
         for f in self.files(filtered=filtered):
@@ -139,25 +131,37 @@ def scan():
     # sc = xScan(start_path='/home/egor/git/jupyter')
     # sc = xScan(start_path=r'U:\Golyshev\Py')
     sc = xScan()
-    print(sc.base_path)
-    start_pos = len(sc.base_path)
-    # fPathW = fFilePath(color=filter_color.WHITE, case=string_case.STRICT, rules=r'\\CarSales\\', start_position=start_pos)
-    # fPathB = fFilePath(color=filter_color.BLACK, case=string_case.STRICT, rules=r'\\\.', start_position=start_pos)
+    # print(sc.base_path)
 
-    # fPath = fDirName(color=filter_color.WHITE, rules={'Reelroad', 'Norah Jones'})
-    # fName = fFileName(rules='\d+', subtype=filter_subtype.NAME)
-    # fExt = fFileName(rules='mp3', color=filter_color.WHITE)
-    #
-    # sc.set_filters(fPathW, fPathB)
-    filters = [
-        fFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py\b', start_position=start_pos),
-        fFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\__init__', start_position=start_pos)
-    ]
-    sc.set_filters(*filters)
+    fPathW = filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\\CarSales\\')
+    fPathB = filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\\.')
+
+    fNameW = filterFileName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'_')
+    fNameB = filterFileName(color=filter_color.BLACK, case=string_case.STRICT, rule=r'test')
+
+    fExtW = filterFileExt(color=filter_color.WHITE, case=string_case.STRICT, rule=r'py.*')
+    fExtB = filterFileExt(color=filter_color.BLACK, case=string_case.STRICT, rule=r'pyc')
+
+    lstF = [fPathW, fPathB, fNameW, fNameB, fExtW, fExtB]
+
+    # sc.set_filters(*lstF)
+    sc.set_filters(fExtW, fExtB)
+
+    for f in sc.filters:
+        print(f)
+
     sc.scan()
     # for f in sc.filters:
     #     print(f)
     print('=' * 50)
+    fl = sc.files()
+
+    def _get_file_ext(path_string):
+        return os.path.splitext(path_string)[-1][1:]
+
+    # for f in fl:
+    #     print(f['path'], _get_file_ext(f['path']))
+
     sc.print_files(filtered=True)
     print('all files - ', sc.size(filtered=True))
 
@@ -169,7 +173,7 @@ if __name__ == "__main__":
     #     print("not yet, mounting...")
     #     os.system("mount smb://commd.local/personal/Golyshev")
 
-    print(scan())
+    scan()
     # ft=x_ge_change_date(days_num=20)
     #
     # flst=FileList(r'U:\Solntsev\4site\New')

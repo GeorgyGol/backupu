@@ -109,24 +109,32 @@ class abcFilter(ABC):
     def rule(self):
         return self._rule
 
+
+    @property
+    def start_pos(self) -> int:
+        return 0
+
+    @start_pos.setter
+    def start_pos(self, value: int):
+        pass
+
     def __str__(self):
         # for python 3.10 ->
         # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rule = {self.rule}'
 
         _s = '{color} filter on {type} ({subtype}); rule = {rule}'
         return _s.format(color = self.color.name, type = self.type.name,
-                         subtype = self.subtype.name, rule = self.rule)
+                         subtype = self.subtype.name, rules = self.rule)
 
 
 # file path-names filters - using re
-class fFilePath(abcFilter):
+class filterFilePath(abcFilter):
     """
     class for filter on file path and name, working on item['path'] scanned file list, for rule use re-expressions
     base class for filtering on name, dirs and extension classes
     """
 
-    def __init__(self, color=filter_color.BLACK,
-                 case=string_case.STRICT, rule:str='', start_position:int=0):
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule:str='', start_position:int=0):
         """
         :param color: BLACK or WHITE for 'only but' or 'only' items
         :param case: case sensivity (key (?i) in re)
@@ -138,6 +146,7 @@ class fFilePath(abcFilter):
         super().__init__(color=color)
 
         self._type = filter_type.PATH
+        self._subtype = filter_subtype.NAME
         self._case = case
 
         self._rule = rule
@@ -149,9 +158,37 @@ class fFilePath(abcFilter):
         self._compile()
 
         if self.color == filter_color.BLACK:
-            self._check_func = lambda item: self._search.search(item) is None
+            self._check_func = lambda item: self._search.search(self._path_transform(item)) is None
         else:
-            self._check_func = lambda item: self._search.search(item) is not None
+            self._check_func = lambda item: self._search.search(self._path_transform(item)) is not None
+
+    def _path_transform(self, file_path):
+        """
+        for re-define in child classas - get some part from full file path for re-search
+        this function return param
+        :param file_path: str - full file path
+        :return: str - working part of full path
+        """
+        return file_path
+
+    @property
+    def start_pos(self)->int:
+        """
+        start position for re-search (using in _compile and check
+        :return:
+        """
+        return self._start_position
+
+    @start_pos.setter
+    def start_pos(self, value:int):
+        """
+        define start position for re-search for exclude base path from filtering
+        :param value: start position for re-search
+        :return:
+        """
+        self._start_position = value
+        self._compile()
+
 
     @property
     def case(self):
@@ -174,41 +211,73 @@ class fFilePath(abcFilter):
 
     def _compile(self):
         strF = self._str_pre + self._rule
-        self._search = re.compile(strF, self._start_position)
+        self._search = re.compile(strF, self.start_pos)
         return self._search
 
+class filterFileName(filterFilePath):
+    """
+    class for filter on file name only
+    """
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=set()):
+        super().__init__(color=color, case=case, rule=rule)
 
-class fFileName(fFilePath):
-
-    def __init__(self, color=filter_color.BLACK, subtype=filter_subtype.EXT,
-                 case=string_case.STRICT, rule=set()):
-        super().__init__(color=color, subtype=subtype, case=case, rule=rule)
         self._type = filter_type.FILE
+        self._subtype = filter_subtype.NAME
 
-        if self.subtype == filter_subtype.EXT:
-            if self.color == filter_color.BLACK:
-                self._check_func = lambda x: self._search.search(x) is None
-            else:
-                self._check_func = lambda x: self._search.search(x) is not None
-        else:  # self.subtype == filter_subtype.NAME:
-            if self.color == filter_color.BLACK:
-                self._check_func = lambda x: self._search.search(pathlib.Path(x).stem) is None
-            else:
-                self._check_func = lambda x: self._search.search(pathlib.Path(x).stem) is not None
+    def _path_transform(self, path_string:str)->str:
+        """
+        get file name without extension from full path
+        :param path_string: string - full file path
+        :return: string - file name
+        """
+        return os.path.splitext(os.path.split(path_string)[-1])[0]
 
-    def _compile(self):
-        if self.subtype == filter_subtype.EXT:
-            # поиск по расширениям файлов
+    @property
+    def start_pos(self) -> int:
+        return self._start_position
 
-            strF = '\.' + '|'.join(set(map(lambda x: str(x), self.rule))) + '$'
-            self._make_re(strF)
-        else:  # self.subtype == filter_subtype.NAME:
-            # поиск по именам файлов
-            strF = '|'.join(set(map(lambda x: str(x), self.rule)))
-            self._make_re(strF)
+    @start_pos.setter
+    def start_pos(self, value: int):
+        """
+        class work on small part of file full path, so start search position = 0
+        :param value:
+        :return:
+        """
+        self._start_position = 0
 
 
-class fDirName(fFilePath):
+class filterFileExt(filterFilePath):
+    """
+    class for filter on file extension only
+    """
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=set()):
+        super().__init__(color=color, case=case, rule=rule)
+
+        self._type = filter_type.FILE
+        self._subtype = filter_subtype.EXT
+
+    def _path_transform(self, path_string:str)->str:
+        """
+        get file extension from full path
+        :param path_string: string - full file path
+        :return: string - file ext
+        """
+        return os.path.splitext(path_string)[-1][1:]
+
+    @property
+    def start_pos(self) -> int:
+        return self._start_position
+
+    @start_pos.setter
+    def start_pos(self, value: int):
+        """
+        class work on small part of file full path, so start search position = 0
+        :param value:
+        :return:
+        """
+        self._start_position = 0
+
+class filterDirName(filterFilePath):
     def __init__(self, color=filter_color.BLACK,
                  case=string_case.STRICT, rule=set()):
         super().__init__(color=color, subtype=filter_subtype.NAME, case=case, rule=rule)
@@ -467,7 +536,7 @@ class fArchAttrib(abcFilter):
 #
 #
 # def main():
-#     fp1 = fFileName(rules=r'\w+', color=filter_color.BLACK, subtype=filter_subtype.EXT)
+#     fp1 = filterFileName(rules=r'\w+', color=filter_color.BLACK, subtype=filter_subtype.EXT)
 #     # fp1.add_rule('ipynb')
 #     # fp1.add_rule('xls[xbm]?')
 #     # fp1.add_rule(r'ipynb')
@@ -481,7 +550,7 @@ class fArchAttrib(abcFilter):
 #     #     print(i, fp1.check(i))
 #
 #     print('-' * 50)
-#     fp2 = fDirName(rules=r'OSN-2020, \.', color=filter_color.WHITE)
+#     fp2 = filterDirName(rules=r'OSN-2020, \.', color=filter_color.WHITE)
 #     print(fp2._search)
 #
 #     lt = list(filter(fp2.check, lst_test))

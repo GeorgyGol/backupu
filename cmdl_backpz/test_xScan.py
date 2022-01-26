@@ -13,12 +13,35 @@ class TestXScan(TestCase):
         self.assertTrue(len(_lst) > 0)
 
     def test_scan_filter_allpath(self):
-        """ test scan fith base path filters black-white  """
-        start_pos = len(self.xScan.base_path)
+        """ test scan file base path filters black-white  """
+
         filters = [
-            fFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py', start_position=start_pos),
-            fFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\__init__', start_position=start_pos)
+            filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py'),
+            filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\__init__')
         ]
         self.xScan.set_filters(*filters)
-        self.assertTrue(self.xScan.size(filtered=False) > self.xScan.size(filtered=True))
+        self.assertTrue(
+            (self.xScan.size(filtered=False) > self.xScan.size(filtered=True)) and
+            (self.xScan.size(filtered=True) > 0))
 
+    def test_scan_filter_filename(self):
+        """ test scan file name filters black-white  """
+
+        filters = [
+            filterFileName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'_'),
+            filterFileName(color=filter_color.BLACK, case=string_case.STRICT, rule=r'test')
+        ]
+        self.xScan.set_filters(*filters)
+        self.assertTrue(
+            (self.xScan.size(filtered=False) > self.xScan.size(filtered=True)) and
+            (self.xScan.size(filtered=True) > 0))
+
+    def test_scan_filter_fileext(self):
+        """ test scan file name filters black-white  """
+
+        filters = [
+            filterFileExt(color=filter_color.WHITE, case=string_case.STRICT, rule=r'py.*'),
+            filterFileExt(color=filter_color.BLACK, case=string_case.STRICT, rule=r'pyc')]
+
+        self.xScan.set_filters(*filters)
+        self.assertTrue(self.xScan.size(filtered=True) > 0)
