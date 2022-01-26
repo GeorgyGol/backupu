@@ -1,6 +1,8 @@
-from unittest import TestCase, main
-from cmdl_backpz.scan import *
+from unittest import TestCase
+
 from cmdl_backpz.filters import *
+from cmdl_backpz.scan import *
+
 
 class TestXScan(TestCase):
     def setUp(self):
@@ -16,8 +18,8 @@ class TestXScan(TestCase):
         """ test scan file base path filters black-white  """
 
         filters = [
-            filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py'),
-            filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\__init__')
+            filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py\b'),
+            filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'__init__')
         ]
         self.xScan.set_filters(*filters)
         self.assertTrue(
