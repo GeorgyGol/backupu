@@ -110,21 +110,13 @@ class abcFilter(ABC):
         return self._rule
 
 
-    @property
-    def start_pos(self) -> int:
-        return 0
-
-    @start_pos.setter
-    def start_pos(self, value: int):
-        pass
-
     def __str__(self):
         # for python 3.10 ->
         # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rule = {self.rule}'
 
         _s = '{color} filter on {type} ({subtype}); rule = {rule}'
         return _s.format(color = self.color.name, type = self.type.name,
-                         subtype = self.subtype.name, rules = self.rule)
+                         subtype=self.subtype.name, rule=self.rule)
 
 
 # file path-names filters - using re
@@ -134,12 +126,11 @@ class filterFilePath(abcFilter):
     base class for filtering on name, dirs and extension classes
     """
 
-    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule:str='', start_position:int=0):
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule: str = ''):
         """
         :param color: BLACK or WHITE for 'only but' or 'only' items
         :param case: case sensivity (key (?i) in re)
         :param rules: re-expression for filtering
-        :param start_position: starting position for re-search
         """
         assert isinstance(case, string_case)
 
@@ -152,8 +143,7 @@ class filterFilePath(abcFilter):
         self._rule = rule
         self._str_pre = '(?i)' if self.case == string_case.ANY else ''
 
-        self._search = '' # prepared and compiled re-object
-        self._start_position = start_position
+        self._search = None  # prepared and compiled re-object
 
         self._compile()
 
@@ -170,24 +160,6 @@ class filterFilePath(abcFilter):
         :return: str - working part of full path
         """
         return file_path
-
-    @property
-    def start_pos(self)->int:
-        """
-        start position for re-search (using in _compile and check
-        :return:
-        """
-        return self._start_position
-
-    @start_pos.setter
-    def start_pos(self, value:int):
-        """
-        define start position for re-search for exclude base path from filtering
-        :param value: start position for re-search
-        :return:
-        """
-        self._start_position = value
-        self._compile()
 
 
     @property
@@ -211,7 +183,7 @@ class filterFilePath(abcFilter):
 
     def _compile(self):
         strF = self._str_pre + self._rule
-        self._search = re.compile(strF, self.start_pos)
+        self._search = re.compile(strF)
         return self._search
 
 class filterFileName(filterFilePath):
@@ -232,19 +204,6 @@ class filterFileName(filterFilePath):
         """
         return os.path.splitext(os.path.split(path_string)[-1])[0]
 
-    @property
-    def start_pos(self) -> int:
-        return self._start_position
-
-    @start_pos.setter
-    def start_pos(self, value: int):
-        """
-        class work on small part of file full path, so start search position = 0
-        :param value:
-        :return:
-        """
-        self._start_position = 0
-
 
 class filterFileExt(filterFilePath):
     """
@@ -263,19 +222,6 @@ class filterFileExt(filterFilePath):
         :return: string - file ext
         """
         return os.path.splitext(path_string)[-1][1:]
-
-    @property
-    def start_pos(self) -> int:
-        return self._start_position
-
-    @start_pos.setter
-    def start_pos(self, value: int):
-        """
-        class work on small part of file full path, so start search position = 0
-        :param value:
-        :return:
-        """
-        self._start_position = 0
 
 class filterDirName(filterFilePath):
     def __init__(self, color=filter_color.BLACK,
