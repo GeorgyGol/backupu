@@ -16,10 +16,6 @@ import os
 import subprocess
 import datetime as dt
 
-# import sys
-# v_info = sys.version_info
-# print(v_info[0], v_info[1])
-
 from cmdl_backpz.filters import *
 
 
@@ -129,8 +125,6 @@ class xScan():
 
     def size(self, filtered=True):
         return len(self.files(filtered=filtered))
-
-
 
 
 def scan():

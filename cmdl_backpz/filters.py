@@ -109,6 +109,7 @@ class abcFilter(ABC):
     def rule(self):
         return self._rule
 
+
     @property
     def start_pos(self) -> int:
         return 0
@@ -119,9 +120,9 @@ class abcFilter(ABC):
 
     def __str__(self):
         # for python 3.10 ->
-        # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rules = {self.rules}'
+        # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rule = {self.rule}'
 
-        _s = '{color} filter on {type} ({subtype}); rules = {rules}'
+        _s = '{color} filter on {type} ({subtype}); rule = {rule}'
         return _s.format(color = self.color.name, type = self.type.name,
                          subtype = self.subtype.name, rules = self.rule)
 
@@ -129,17 +130,15 @@ class abcFilter(ABC):
 # file path-names filters - using re
 class filterFilePath(abcFilter):
     """
-    class for filter on file path and name, working on item['path'] scanned file list, for rule use re-eexpressions
+    class for filter on file path and name, working on item['path'] scanned file list, for rule use re-expressions
     base class for filtering on name, dirs and extension classes
     """
 
     def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule:str='', start_position:int=0):
         """
-
         :param color: BLACK or WHITE for 'only but' or 'only' items
-        :param subtype: name | dir | ext part of full file name
         :param case: case sensivity (key (?i) in re)
-        :param rule: re-eexpression for filtering
+        :param rules: re-expression for filtering
         :param start_position: starting position for re-search
         """
         assert isinstance(case, string_case)
@@ -280,8 +279,8 @@ class filterFileExt(filterFilePath):
 
 class filterDirName(filterFilePath):
     def __init__(self, color=filter_color.BLACK,
-                 case=string_case.STRICT, rules=set()):
-        super().__init__(color=color, subtype=filter_subtype.NAME, case=case, rules=rules)
+                 case=string_case.STRICT, rule=set()):
+        super().__init__(color=color, subtype=filter_subtype.NAME, case=case, rule=rule)
         self._type = filter_type.DIR
 
         if self.color == filter_color.BLACK:
@@ -291,7 +290,7 @@ class filterDirName(filterFilePath):
 
     def _compile(self):
         # поиск по имени в полном пути, начиная с начала (с корня)
-        strF = '|'.join(set(map(lambda x: str(x), self.rules)))
+        strF = '|'.join(set(map(lambda x: str(x), self.rule)))
         self._make_re(strF)
 
 
@@ -382,7 +381,7 @@ class fFileSize(fAbcRange):
         self._subtype = filter_subtype.SIZE_MARGIN
 
     @property
-    def rules(self):
+    def rule(self):
         return {'low_size': self.low_level, 'hight_size': self.hight_level,
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
@@ -434,7 +433,7 @@ class fFileDate(fAbcRange):
         self.hight_level = hdate or dt.date(year=2270, month=1, day=1)
 
     @property
-    def rules(self):
+    def rule(self):
         return {'low_date': self.low_date.strftime('%Y-%m-%d'), 'hight_date': self.hight_date.strftime('%Y-%m-%d'),
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
@@ -473,7 +472,7 @@ class fFileDateExact(abcFilter):
         self._check_date = cdate
 
     @property
-    def rules(self):
+    def rule(self):
         return self.check_date.strftime('%Y-%m-%d')
 
 
@@ -503,7 +502,7 @@ class fArchAttrib(abcFilter):
         return item['isA']
 
     @property
-    def rules(self):
+    def rule(self):
         return 'A-attribute'
 
 
