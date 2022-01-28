@@ -23,12 +23,26 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import zipfile
 from abc import ABC, abstractmethod
 from shutil import copy2
-import sys
 
-from cmdl_backpz import scan
+
+# from cmdl_backpz import scan
+
+def set_archive_sttrib(file_path, AAtrib_ON=True):
+    """
+    Switch UO or DOWN archive file attribute - work on MS Windows OS
+    :param file_path:
+    :param AAtrib_ON: True - Switch attribute ON, False- OFF
+    :return: windows system command attr return
+    """
+
+    if AAtrib_ON:
+        return subprocess.check_output(['attrib', '+a', file_path])
+    else:
+        return subprocess.check_output(['attrib', '-a', file_path])
 
 
 class X_SPATH(ABC):

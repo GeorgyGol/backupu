@@ -109,7 +109,6 @@ class abcFilter(ABC):
     def rule(self):
         return self._rule
 
-
     def __str__(self):
         # for python 3.10 ->
         # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rule = {self.rule}'
@@ -118,19 +117,30 @@ class abcFilter(ABC):
         return _s.format(color = self.color.name, type = self.type.name,
                          subtype=self.subtype.name, rule=self.rule)
 
+    @property
+    def BasePath(self) -> str:
+        return self._base_path
 
-# file path-names filters - using re
+    @BasePath.setter
+    def BasePath(self, value: str):
+        assert os.path.exists(value), 'Must get exisiting dir'
+        self._base_path = value
+
+
+# =================== file path-names filters - using re =============================
+
 class filterFilePath(abcFilter):
     """
-    class for filter on file path and name, working on item['path'] scanned file list, for rule use re-expressions
+    class for filter on full file path, working on item['path'] scanned file list, for rule use re-expressions
     base class for filtering on name, dirs and extension classes
     """
 
-    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule: str = ''):
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule: str = '', strBasePath=''):
         """
         :param color: BLACK or WHITE for 'only but' or 'only' items
         :param case: case sensivity (key (?i) in re)
         :param rules: re-expression for filtering
+        :param strBasePath: base file path from xScan class for exclude from re-search
         """
         assert isinstance(case, string_case)
 
@@ -139,6 +149,7 @@ class filterFilePath(abcFilter):
         self._type = filter_type.PATH
         self._subtype = filter_subtype.NAME
         self._case = case
+        self._base_path = strBasePath
 
         self._rule = rule
         self._str_pre = '(?i)' if self.case == string_case.ANY else ''
@@ -154,12 +165,12 @@ class filterFilePath(abcFilter):
 
     def _path_transform(self, file_path):
         """
-        for re-define in child classas - get some part from full file path for re-search
+        for re-define in child classas - get some part from full file path for re-search (exclude base scan path)
         this function return param
         :param file_path: str - full file path
         :return: str - working part of full path
         """
-        return file_path
+        return file_path[len(self._base_path) + 1:]
 
 
     @property
@@ -172,8 +183,8 @@ class filterFilePath(abcFilter):
     def __str__(self):
         # for Python 3.10 ->
         # return super().__str__() + f'; string case: {self.case.name}'
-        _s = '; string case: {case}'
-        return super().__str__() + _s.format(case = self.case.name)
+        _s = '; string case: {case}, exclude path {base_path}'
+        return super().__str__() + _s.format(case=self.case.name, base_path=self.BasePath)
 
     def check(self, item):
         return self._check_func(item)
@@ -190,7 +201,8 @@ class filterFileName(filterFilePath):
     """
     class for filter on file name only
     """
-    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=set()):
+
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=''):
         super().__init__(color=color, case=case, rule=rule)
 
         self._type = filter_type.FILE
@@ -204,12 +216,12 @@ class filterFileName(filterFilePath):
         """
         return os.path.splitext(os.path.split(path_string)[-1])[0]
 
-
 class filterFileExt(filterFilePath):
     """
     class for filter on file extension only
     """
-    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=set()):
+
+    def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=''):
         super().__init__(color=color, case=case, rule=rule)
 
         self._type = filter_type.FILE
@@ -224,24 +236,27 @@ class filterFileExt(filterFilePath):
         return os.path.splitext(path_string)[-1][1:]
 
 class filterDirName(filterFilePath):
+    """
+    filter by file parent dir full path, exclude name and ext
+    """
     def __init__(self, color=filter_color.BLACK,
-                 case=string_case.STRICT, rule=set()):
-        super().__init__(color=color, subtype=filter_subtype.NAME, case=case, rule=rule)
+                 case=string_case.STRICT, rule=''):
+        super().__init__(color=color, case=case, rule=rule)
+        self._subtype = filter_subtype.NAME
         self._type = filter_type.DIR
 
-        if self.color == filter_color.BLACK:
-            self._check_func = lambda x: self._search.search(str(pathlib.Path(x).parent)) is None
-        else:
-            self._check_func = lambda x: self._search.search(str(pathlib.Path(x).parent)) is not None
-
-    def _compile(self):
-        # поиск по имени в полном пути, начиная с начала (с корня)
-        strF = '|'.join(set(map(lambda x: str(x), self.rule)))
-        self._make_re(strF)
+    def _path_transform(self, path_string: str) -> str:
+        """
+        get file path exclude name and ext
+        :param path_string: string - full file path
+        :return: string - file parent dir full path
+        """
+        return str(pathlib.Path(path_string).parent)[len(self.BasePath) + 1:]
 
 
-# ====== end name's filters
+# =================== end file path-names filters - using re =========================
 
+# =================== file path-names filters - using re =============================
 class fAbcRange(abcFilter):
 
     def _compile(self):
@@ -305,9 +320,11 @@ class fAbcRange(abcFilter):
         self._compile()
 
 
-# file size filters
-class fFileSize(fAbcRange):
-
+# =================== file size filters (range, in bytes) =============================
+class filterFileSize(fAbcRange):
+    """
+    filter for file size in bytes
+    """
     def check(self, item):
         st = os.stat(item)
         x = st.st_size
@@ -317,10 +334,27 @@ class fFileSize(fAbcRange):
         return self._check_func(item['size'])
 
     def __init__(self, color=filter_color.WHITE,
-                 low_size=0, high_size=1e19,
+                 low_level=0, high_level=1e19,
                  left_margin=True, right_margin=True):
+        """
+        for WHITE filter:
+            self.low_level > file_size > self.hight_level
+                for self.left_margin = self.right_margin = True
+            self.low_level >= file_size >= self.hight_level
+
+        for BLACK filter:
+            self.low_level < file_size OR file_size > self.hight_level
+                for self.left_margin = self.right_margin = True
+            self.low_level <= file_size OR file_size >= self.hight_level
+
+        :param color: BLACK or WHITE filter
+        :param low_level:
+        :param high_level: default set very big num for filtering low_size > file_size > Infinity
+        :param left_margin: if True -  low_size >= file_size > high_size, if False - low_size > file_size > high_size
+        :param right_margin: if True -  low_size < file_size >= high_size, if False - low_size > file_size > high_size
+        """
         super().__init__(color=color,
-                         low_level=low_size, high_level=high_size,
+                         low_level=low_level, high_level=high_level,
                          left_margin=left_margin, right_margin=right_margin)
 
         self._type = filter_type.SIZE
@@ -328,11 +362,38 @@ class fFileSize(fAbcRange):
 
     @property
     def rule(self):
-        return {'low_size': self.low_level, 'hight_size': self.hight_level,
+        return {'low_level': self.low_level, 'hight_level': self.hight_level,
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
+    def _compile(self):
+        """
+        for WHITE filter:
+            self.low_level > x > self.hight_level
+                for self.left_margin = self.right_margin = True
+            self.low_level >= x >= self.hight_level
 
-# ====== end file size filters
+        for BLACK filter:
+            self.low_level < x OR x > self.hight_level
+                for self.left_margin = self.right_margin = True
+            self.low_level <= x OR x >= self.hight_level
+        :return:
+        """
+        if self.color == filter_color.WHITE:
+            opl = op.ge if self.left_margin else op.gt
+            opr = op.le if self.right_margin else op.lt
+            self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
+        else:
+            opl = op.le if self.left_margin else op.lt
+            opr = op.ge if self.right_margin else op.gt
+            self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
+
+            # opf = op.not_ if self.color == filter_color.BLACK else op.truth
+            # self._check_func = lambda x: opf(opl(x, self.low_level) & opr(x, self.hight_level))
+            # self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
+
+
+# =================== end file size filters (range, in bytes) =============================
+
 # file date change-create filters
 
 class fFileDate(fAbcRange):
@@ -424,11 +485,13 @@ class fFileDateExact(abcFilter):
 
 # ====== end date's filters
 
-# file attributes filters (windows)
-class fArchAttrib(abcFilter):
-    def add_rule(self):
-        raise NotImplemented
+# =================== file attributes filters (windows, A-attr) =============================
 
+class filterArchAttrib(abcFilter):
+    """
+    filter for archive file attribute - WORK ONLY ON Windows OS!
+    on linux always return True (means all files are pass)
+    """
     def __init__(self, color=filter_color.WHITE):
         super().__init__(color=color)
         self._type = filter_type.ATTRIB
@@ -445,14 +508,22 @@ class fArchAttrib(abcFilter):
             return False
 
     def s_check(self, item):
-        return item['isA']
+        _d = {filter_color.WHITE: item['A-attr'],
+              filter_color.BLACK: not item['A-attr']}
+        return _d[self.color]
 
     @property
     def rule(self):
         return 'A-attribute'
 
+    def __str__(self):
+        # for python 3.10 ->
+        # return f'{self.color.name} filter on {self.type.name} ({self.subtype.name}); rule = {self.rule}'
 
-# ====== end attributes's filters
+        _s = '{color} filter on {type}; rule = {rule}'
+        return _s.format(color=self.color.name, type=self.type.name, rule=self.rule)
+
+# =================== end file attributes filters (windows, A-attr) =============================
 
 # def fdate():
 #     # for i in lst_test:
