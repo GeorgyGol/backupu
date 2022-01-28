@@ -112,6 +112,8 @@ class xScan():
 
         self._filters = list()
         self._filters += argc
+        for f in self._filters:
+            f.BasePath = self._base_path
 
     def print_files(self, filtered=True):
         for f in self.files(filtered=filtered):
@@ -120,65 +122,70 @@ class xScan():
     def size(self, filtered=True):
         return len(self.files(filtered=filtered))
 
-
 def scan():
-    # sc = xScan(start_path='/home/egor/git/jupyter')
+    # some examples
+    # create xScan object
+
+    # --- for scanning selected dir
     # sc = xScan(start_path=r'U:\Golyshev\Py')
+
+    # --- for scanning current dir
     sc = xScan()
+
     print(sc.base_path)
 
-    fPathW = filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\\CarSales\\')
+    # set up filters
+    # --- file full path filters
+    fPathW = filterFilePath(color=filter_color.WHITE, case=string_case.ANY, rule=r'\\PY\\')
     fPathB = filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'\\\.')
 
+    # --- file name filters (only name from full path)
+    fNameW = filterFileName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'_')
+    fNameB = filterFileName(color=filter_color.BLACK, case=string_case.STRICT, rule=r'test')
+
+    # --- file ext filters (only ext from full path)
+    fExtW = filterFileExt(color=filter_color.WHITE, case=string_case.STRICT, rule=r'py.*')
+    fExtB = filterFileExt(color=filter_color.BLACK, case=string_case.STRICT, rule=r'pyc')
+
+    # --- file dir filters (only parend dir name from full path)
+    fDirW = filterDirName(color=filter_color.WHITE, case=string_case.ANY, rule=r'PY')
+    fDirB = filterDirName(color=filter_color.BLACK, case=string_case.ANY, rule=r'\\aigk\\PY')
+
+    # --- file size filters
+    fSizeW = filterFileSize(color=filter_color.WHITE, low_level=10, high_level=5e3)
+    fSizeB = filterFileSize(color=filter_color.BLACK, low_level=50)
+
+    # --- file archive attribute filters
+    fAAtrW = filterArchAttrib(color=filter_color.WHITE)
+    fAAtrB = filterArchAttrib(color=filter_color.BLACK)
+
+    # set up list of filters
     filters = [
         filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py\b'),
         filterFilePath(color=filter_color.BLACK, case=string_case.STRICT, rule=r'__init__')
     ]
 
-    fNameW = filterFileName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'_')
-    fNameB = filterFileName(color=filter_color.BLACK, case=string_case.STRICT, rule=r'test')
+    # set filters property for xScan
+    # sc.set_filters(fDirB, fDirW)
+    # sc.set_filters(fAAtrW)
+    # sc.set_filters(*filters)
 
-    fExtW = filterFileExt(color=filter_color.WHITE, case=string_case.STRICT, rule=r'py.*')
-    fExtB = filterFileExt(color=filter_color.BLACK, case=string_case.STRICT, rule=r'pyc')
-
-    lstF = [fPathW, fPathB, fNameW, fNameB, fExtW, fExtB]
-
-    # sc.set_filters(*lstF)
-    sc.set_filters(*filters)
-
+    # print filters from xScan
     for f in sc.filters:
         print(f)
 
-    sc.scan()
-    # for f in sc.filters:
-    #     print(f)
-    print('=' * 50)
-    fl = sc.files()
+    # get filtered file list
+    fl = sc.files()  # unfilterd scanned files
+    ffl = sc.files(filtered=True)  # filterd scanned files (apply all filters)
+    #
+    for f in ffl:
+        print(f['path'], f['A-attr'])
 
-    def _get_file_ext(path_string):
-        return os.path.splitext(path_string)[-1][1:]
-
-    # for f in fl:
-    #     print(f['path'], _get_file_ext(f['path']))
-
-    sc.print_files(filtered=True)
     print('all files - ', sc.size(filtered=False), 'filteres - ', sc.size(filtered=True))
 
 
 if __name__ == "__main__":
-    # main()
-
-    # if not os.path.ismount("smb://commd.local/personal/Golyshev"):
-    #     print("not yet, mounting...")
-    #     os.system("mount smb://commd.local/personal/Golyshev")
 
     scan()
-    # ft=x_ge_change_date(days_num=20)
-    #
-    # flst=FileList(r'U:\Solntsev\4site\New')
-    #
-    # flst.scan()
-    #
-    # for f in flst.files:
-    #     print(f, ft.check(f))
+
     print('All done')

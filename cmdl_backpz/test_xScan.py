@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from cmdl_backpz.filters import *
+from cmdl_backpz.actions import set_archive_sttrib
 from cmdl_backpz.scan import *
 
 
@@ -47,3 +47,43 @@ class TestXScan(TestCase):
 
         self.xScan.set_filters(*filters)
         self.assertTrue(self.xScan.size(filtered=True) > 0)
+
+    def test_scan_filter_dir(self):
+        """ test scan file parent dirs filters black-white  """
+
+        filters = [
+            filterDirName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'__pycache__'),
+            filterDirName(color=filter_color.BLACK, case=string_case.STRICT, rule=r'__pycache__')]
+
+        self.xScan.set_filters(*filters)
+        self.assertTrue(self.xScan.size(filtered=True) == 0)
+
+    def test_scan_filter_size(self):
+        """ test scan file parent dirs filters black-white  """
+
+        filters = [
+            filterFileSize(color=filter_color.WHITE, low_level=10, high_level=5e3),
+            filterFileSize(color=filter_color.BLACK, low_level=50)
+        ]
+
+        self.xScan.set_filters(*filters)
+        self.assertTrue(self.xScan.size(filtered=True) == 1)
+
+    def test_scan_filter_arch_attrib(self):
+        """ test scan file a-attrib filters black-white  """
+        if platform.system() == 'Windows':
+            dn = filterFileName(color=filter_color.WHITE, case=string_case.STRICT, rule=r'__init__')
+
+            self.xScan.scan()
+            self.xScan.set_filters(dn)
+            for f in self.xScan.files(filtered=True):
+                set_archive_sttrib(f['path'], AAtrib_ON=False)
+
+            fAAtrW = filterArchAttrib(color=filter_color.WHITE)
+            fAAtrB = filterArchAttrib(color=filter_color.BLACK)
+
+            self.xScan.scan()
+            self.xScan.set_filters(fAAtrB)
+            self.assertTrue(self.xScan.size(filtered=True) >= 1)
+        else:
+            self.assertTrue(True)
