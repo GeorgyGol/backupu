@@ -122,6 +122,7 @@ class xScan():
     def size(self, filtered=True):
         return len(self.files(filtered=filtered))
 
+
 def scan():
     # some examples
     # create xScan object
@@ -131,7 +132,7 @@ def scan():
 
     # --- for scanning current dir
     sc = xScan()
-
+    sc.scan()
     print(sc.base_path)
 
     # set up filters
@@ -159,6 +160,19 @@ def scan():
     fAAtrW = filterArchAttrib(color=filter_color.WHITE)
     fAAtrB = filterArchAttrib(color=filter_color.BLACK)
 
+    fDtRangeW = filterFileDateRange(color=filter_color.WHITE,
+                                    low_date=dt.date(day=1, month=1, year=2018),
+                                    high_date=dt.date(day=1, month=1, year=2020))
+    fDtRangeB = filterFileDateRange(color=filter_color.BLACK,
+                                    low_date=dt.date(day=1, month=1, year=2018),
+                                    high_date=dt.date(day=1, month=1, year=2020))
+
+    fDtW = filterFileDateExact(color=filter_color.WHITE,
+                               file_date=dt.date(day=2, month=3, year=2017))
+
+    fDtB = filterFileDateExact(color=filter_color.BLACK,
+                               file_date=dt.date(day=2, month=3, year=2017))
+
     # set up list of filters
     filters = [
         filterFilePath(color=filter_color.WHITE, case=string_case.STRICT, rule=r'\.py\b'),
@@ -167,7 +181,7 @@ def scan():
 
     # set filters property for xScan
     # sc.set_filters(fDirB, fDirW)
-    # sc.set_filters(fAAtrW)
+    sc.set_filters(fDtW)
     # sc.set_filters(*filters)
 
     # print filters from xScan
@@ -176,10 +190,10 @@ def scan():
 
     # get filtered file list
     fl = sc.files()  # unfilterd scanned files
-    ffl = sc.files(filtered=True)  # filterd scanned files (apply all filters)
+    ffl = sc.files(filtered=False)  # filterd scanned files (apply all filters)
     #
     for f in ffl:
-        print(f['path'], f['A-attr'])
+        print(f['path'], f['change_date'])
 
     print('all files - ', sc.size(filtered=False), 'filteres - ', sc.size(filtered=True))
 

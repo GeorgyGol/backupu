@@ -319,6 +319,27 @@ class fAbcRange(abcFilter):
         self._right_margin = value
         self._compile()
 
+    def _compile(self):
+        """
+        for WHITE filter:
+            self.low_level > x > self.hight_level
+                for self.left_margin = self.right_margin = True
+            self.low_level >= x >= self.hight_level
+
+        for BLACK filter:
+            self.low_level < x OR x > self.hight_level
+                for self.left_margin = self.right_margin = True
+            self.low_level <= x OR x >= self.hight_level
+        :return:
+        """
+        if self.color == filter_color.WHITE:
+            opl = op.ge if self.left_margin else op.gt
+            opr = op.le if self.right_margin else op.lt
+            self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
+        else:
+            opl = op.le if self.left_margin else op.lt
+            opr = op.ge if self.right_margin else op.gt
+            self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
 
 # =================== file size filters (range, in bytes) =============================
 class filterFileSize(fAbcRange):
@@ -365,61 +386,59 @@ class filterFileSize(fAbcRange):
         return {'low_level': self.low_level, 'hight_level': self.hight_level,
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
-    def _compile(self):
-        """
-        for WHITE filter:
-            self.low_level > x > self.hight_level
-                for self.left_margin = self.right_margin = True
-            self.low_level >= x >= self.hight_level
-
-        for BLACK filter:
-            self.low_level < x OR x > self.hight_level
-                for self.left_margin = self.right_margin = True
-            self.low_level <= x OR x >= self.hight_level
-        :return:
-        """
-        if self.color == filter_color.WHITE:
-            opl = op.ge if self.left_margin else op.gt
-            opr = op.le if self.right_margin else op.lt
-            self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
-        else:
-            opl = op.le if self.left_margin else op.lt
-            opr = op.ge if self.right_margin else op.gt
-            self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
-
-            # opf = op.not_ if self.color == filter_color.BLACK else op.truth
-            # self._check_func = lambda x: opf(opl(x, self.low_level) & opr(x, self.hight_level))
-            # self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
-
+    # def _compile(self):
+    #     """
+    #     for WHITE filter:
+    #         self.low_level > x > self.hight_level
+    #             for self.left_margin = self.right_margin = True
+    #         self.low_level >= x >= self.hight_level
+    #
+    #     for BLACK filter:
+    #         self.low_level < x OR x > self.hight_level
+    #             for self.left_margin = self.right_margin = True
+    #         self.low_level <= x OR x >= self.hight_level
+    #     :return:
+    #     """
+    #     if self.color == filter_color.WHITE:
+    #         opl = op.ge if self.left_margin else op.gt
+    #         opr = op.le if self.right_margin else op.lt
+    #         self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
+    #     else:
+    #         opl = op.le if self.left_margin else op.lt
+    #         opr = op.ge if self.right_margin else op.gt
+    #         self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
 
 # =================== end file size filters (range, in bytes) =============================
 
 # file date change-create filters
 
-class fFileDate(fAbcRange):
-
+class filterFileDateRange(fAbcRange):
+    """
+    filter for file change datetime
+    """
     def check(self, item):
         st = os.stat(item)
         x = dt.datetime.fromtimestamp(st.st_mtime).date()
         return self._check_func(x)
 
     def s_check(self, item):
-        return self._check_func(item['mod_date'])
+        return self._check_func(item['change_date'])
 
     def __init__(self, color=filter_color.WHITE,
                  low_date=None,
                  high_date=dt.datetime.now().date(),
                  left_margin=True, right_margin=True):
-        # assert isinstance(low_date, dt.datetime)
-        # assert isinstance(high_date, dt.datetime)
+        assert isinstance(low_date, dt.date) or isinstance(low_date, dt.datetime)
+        assert isinstance(high_date, dt.date) or isinstance(low_date, dt.datetime)
 
         super().__init__(color=color,
                          low_level=low_date or dt.date(year=1970, month=1, day=1),
-                         high_level=high_date or dt.date(year=2270, month=1, day=1),
+                         high_level=high_date,
                          left_margin=left_margin, right_margin=right_margin)
 
         self._type = filter_type.DATE
         self._subtype = filter_subtype.DATE_MARGIN
+        self._compile()
 
     @property
     def low_date(self):
@@ -427,8 +446,9 @@ class fFileDate(fAbcRange):
 
     @low_date.setter
     def low_date(self, ldate):
-        assert type(ldate) == dt.date
-        self.low_level = ldate or dt.date(year=1970, month=1, day=1)
+        assert isinstance(ldate, dt.date) or isinstance(ldate, dt.datetime)
+        self.low_level = ldate
+        self._compile()
 
     @property
     def hight_date(self):
@@ -436,8 +456,10 @@ class fFileDate(fAbcRange):
 
     @hight_date.setter
     def hight_date(self, hdate):
-        assert type(hdate) == dt.date
-        self.hight_level = hdate or dt.date(year=2270, month=1, day=1)
+        assert isinstance(hdate, dt.date) or isinstance(hdate, dt.datetime)
+
+        self.hight_level = hdate
+        self._compile()
 
     @property
     def rule(self):
@@ -445,43 +467,45 @@ class fFileDate(fAbcRange):
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
 
-class fFileDateExact(abcFilter):
-
+class filterFileDateExact(filterFileDateRange):
+    """
+    filter of file change date exactly
+    """
     def _compile(self):
-        self._check_func = op.eq if self.color == filter_color.WHITE else op.ne
+        #     """
+        #     for WHITE filter:
+        #         file change date == x
+        #
+        #     for BLACK filter:
+        #         file change date != x
+        #     """
 
-    def check(self, item):
-        st = os.stat(item)
-        x = dt.datetime.fromtimestamp(st.st_mtime).date()
-        return self._check_func(x, self.check_date)
+        if self.color == filter_color.WHITE:
+            self._check_func = lambda x: x == self.hight_date
+        else:
+            self._check_func = lambda x: x != self.hight_date
 
-    def s_check(self, item):
-        return self._check_func(item['mod_date'], self.check_date)
+    def __init__(self, color=filter_color.WHITE,
+                 file_date=dt.datetime.now().date()):
+        assert isinstance(file_date, dt.date) or isinstance(file_date, dt.datetime)
 
-    def __init__(self, color=filter_color.WHITE, check_date=None):
-        assert type(check_date) == dt.date
+        super().__init__(color=color,
+                         low_date=dt.date(year=1970, month=1, day=1),
+                         high_date=file_date)
 
-        super().__init__(color=color)
-
-        self._type = filter_type.DATE
         self._subtype = filter_subtype.DATE_EXACT
 
-        self._check_date = check_date
-        self._compile()
-
     @property
-    def check_date(self):
-        return self._check_date
+    def file_date(self):
+        return super().hight_level
 
-    @check_date.setter
-    def check_date(self, cdate):
-        assert type(cdate) == dt.date
-        self._check_date = cdate
+    @file_date.setter
+    def file_date(self, hdate):
+        super().hight_level = hdate
 
     @property
     def rule(self):
-        return self.check_date.strftime('%Y-%m-%d')
-
+        return {'change_date': self.hight_date.strftime('%Y-%m-%d')}
 
 # ====== end date's filters
 
@@ -489,8 +513,8 @@ class fFileDateExact(abcFilter):
 
 class filterArchAttrib(abcFilter):
     """
-    filter for archive file attribute - WORK ONLY ON Windows OS!
-    on linux always return True (means all files are pass)
+    filter for archive file attribute - WORK ONLY FOR Windows OS!
+    for linux return actual a-atrib value (False for WHITE and True for BLACK - a-atrib not setting up)
     """
     def __init__(self, color=filter_color.WHITE):
         super().__init__(color=color)
@@ -524,65 +548,3 @@ class filterArchAttrib(abcFilter):
         return _s.format(color=self.color.name, type=self.type.name, rule=self.rule)
 
 # =================== end file attributes filters (windows, A-attr) =============================
-
-# def fdate():
-#     # for i in lst_test:
-#     #     st = os.stat(i)
-#     #     print(i, st.st_size, dt.datetime.fromtimestamp(st.st_mtime))
-#     fdt1 = fFileDate(color=filter_color.WHITE,
-#                      low_date=dt.date(year=2020, month=1, day=1))
-#
-#     print(fdt1)
-#     # print(fdt1.check(dt.date(year=2021, month=1, day=1)))
-#     lt1 = list(filter(fdt1.check, lst_test))
-#
-#     for i in lt1:
-#         st = os.stat(i)
-#         print(i, dt.datetime.fromtimestamp(st.st_mtime).date())
-#
-#     print('*' * 50)
-#
-#     fdt2 = fFileDateExact(color=filter_color.WHITE, check_date=dt.date(year=2021, month=4, day=12))
-#     print(fdt2)
-#
-#     lt2 = list(filter(fdt2.check, lst_test))
-#     for i in lt2:
-#         st = os.stat(i)
-#         print(i, dt.datetime.fromtimestamp(st.st_mtime).date())
-#     # print(fdt2.check(dt.datetime(year=2021, month=1, day=1)))
-#
-#
-# def main():
-#     fp1 = filterFileName(rules=r'\w+', color=filter_color.BLACK, subtype=filter_subtype.EXT)
-#     # fp1.add_rule('ipynb')
-#     # fp1.add_rule('xls[xbm]?')
-#     # fp1.add_rule(r'ipynb')
-#
-#     print(fp1._search)
-#     lt = list(filter(fp1.check, lst_test))
-#     for i in lt:
-#         print(i)
-#
-#     # for i in lst_test:
-#     #     print(i, fp1.check(i))
-#
-#     print('-' * 50)
-#     fp2 = filterDirName(rules=r'OSN-2020, \.', color=filter_color.WHITE)
-#     print(fp2._search)
-#
-#     lt = list(filter(fp2.check, lst_test))
-#     for i in lt:
-#         print(i)
-#
-#     # for i in lst_test:
-#     #     print(i, fp2.check(i))
-#
-#     print(fp1)
-#     print(fp2)
-#     print('main done')
-#
-#
-# if __name__ == '__main__':
-#     # main()
-#     fdate()
-#     print('All done.')
