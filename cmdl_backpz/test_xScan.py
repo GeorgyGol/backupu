@@ -87,3 +87,41 @@ class TestXScan(TestCase):
             self.assertTrue(self.xScan.size(filtered=True) >= 1)
         else:
             self.assertTrue(True)
+
+    def test_scan_filter_changedate_range(self):
+        """ test scan file date change filters black-white  """
+
+        self.xScan.scan()
+
+        fDtRangeW = filterFileDateRange(color=filter_color.WHITE,
+                                        low_date=dt.date(day=1, month=1, year=2021),
+                                        high_date=dt.date(day=1, month=1, year=2022))
+        fDtRangeB = filterFileDateRange(color=filter_color.BLACK,
+                                        low_date=dt.date(day=1, month=1, year=2021),
+                                        high_date=dt.date(day=1, month=1, year=2022))
+
+        self.xScan.set_filters(fDtRangeW)
+        bW = self.xScan.size(filtered=True) >= 1
+
+        self.xScan.set_filters(fDtRangeB)
+        bB = self.xScan.size(filtered=True) != 0  # file __init__.py changed 2020-01-28
+
+        self.assertTrue(bW and bB)
+
+    def test_scan_filter_changedate_exact(self):
+        """ test scan file date change filters black-white  """
+
+        self.xScan.scan()
+
+        fDtRangeW = filterFileDateExact(color=filter_color.WHITE,
+                                        file_date=dt.date(day=28, month=1, year=2020))
+        fDtRangeB = filterFileDateExact(color=filter_color.BLACK,
+                                        file_date=dt.date(day=28, month=1, year=2020))
+
+        self.xScan.set_filters(fDtRangeW)
+        bW = self.xScan.size(filtered=True) >= 1
+
+        self.xScan.set_filters(fDtRangeB)
+        bB = self.xScan.size(filtered=True) != 0  # file __init__.py changed 2020-01-28
+
+        self.assertTrue(bW and bB)
