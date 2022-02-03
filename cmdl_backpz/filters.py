@@ -266,9 +266,9 @@ class fAbcRange(abcFilter):
         opf = op.not_ if self.color == filter_color.BLACK else op.truth
         self._check_func = lambda x: opf(opl(x, self.low_level) & opr(x, self.hight_level))
 
-    def __init__(self, color=filter_color.WHITE,
-                 low_level=None, high_level=None,
-                 left_margin=True, right_margin=True):
+    def __init__(self, color: filter_color = filter_color.WHITE,
+                 low_level: int = None, high_level: int = None,
+                 left_margin: bool = True, right_margin: bool = True):
         assert type(left_margin) == bool
         assert type(right_margin) == bool
 
@@ -300,21 +300,21 @@ class fAbcRange(abcFilter):
         self._compile()
 
     @property
-    def left_margin(self):
+    def left_margin(self) -> bool:
         return self._left_margin
 
     @left_margin.setter
-    def left_margin(self, is_left_margin):
+    def left_margin(self, is_left_margin: bool):
         assert type(is_left_margin) == bool
         self._left_margin = is_left_margin
         self._compile()
 
     @property
-    def right_margin(self):
+    def right_margin(self) -> bool:
         return self._right_margin
 
     @right_margin.setter
-    def right_margin(self, value):
+    def right_margin(self, value: bool):
         assert type(value) == bool
         self._right_margin = value
         self._compile()
@@ -341,22 +341,24 @@ class fAbcRange(abcFilter):
             opr = op.ge if self.right_margin else op.gt
             self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
 
+
 # =================== file size filters (range, in bytes) =============================
 class filterFileSize(fAbcRange):
     """
     filter for file size in bytes
     """
-    def check(self, item):
+
+    def check(self, item) -> bool:
         st = os.stat(item)
         x = st.st_size
         return self._check_func(x)
 
-    def s_check(self, item):
+    def s_check(self, item) -> bool:
         return self._check_func(item['size'])
 
-    def __init__(self, color=filter_color.WHITE,
-                 low_level=0, high_level=1e19,
-                 left_margin=True, right_margin=True):
+    def __init__(self, color: filter_color = filter_color.WHITE,
+                 low_level: int = 0, high_level: int = 1e19,
+                 left_margin: bool = True, right_margin: bool = True):
         """
         for WHITE filter:
             self.low_level > file_size > self.hight_level
@@ -386,27 +388,6 @@ class filterFileSize(fAbcRange):
         return {'low_level': self.low_level, 'hight_level': self.hight_level,
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
-    # def _compile(self):
-    #     """
-    #     for WHITE filter:
-    #         self.low_level > x > self.hight_level
-    #             for self.left_margin = self.right_margin = True
-    #         self.low_level >= x >= self.hight_level
-    #
-    #     for BLACK filter:
-    #         self.low_level < x OR x > self.hight_level
-    #             for self.left_margin = self.right_margin = True
-    #         self.low_level <= x OR x >= self.hight_level
-    #     :return:
-    #     """
-    #     if self.color == filter_color.WHITE:
-    #         opl = op.ge if self.left_margin else op.gt
-    #         opr = op.le if self.right_margin else op.lt
-    #         self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
-    #     else:
-    #         opl = op.le if self.left_margin else op.lt
-    #         opr = op.ge if self.right_margin else op.gt
-    #         self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
 
 # =================== end file size filters (range, in bytes) =============================
 
@@ -416,16 +397,17 @@ class filterFileDateRange(fAbcRange):
     """
     filter for file change datetime
     """
-    def check(self, item):
+
+    def check(self, item) -> bool:
         st = os.stat(item)
         x = dt.datetime.fromtimestamp(st.st_mtime).date()
         return self._check_func(x)
 
-    def s_check(self, item):
+    def s_check(self, item) -> bool:
         return self._check_func(item['change_date'])
 
-    def __init__(self, color=filter_color.WHITE,
-                 low_date=None,
+    def __init__(self, color: filter_color = filter_color.WHITE,
+                 low_date=dt.date(year=1970, month=1, day=1),
                  high_date=dt.datetime.now().date(),
                  left_margin=True, right_margin=True):
         assert isinstance(low_date, dt.date) or isinstance(low_date, dt.datetime)
@@ -516,7 +498,8 @@ class filterArchAttrib(abcFilter):
     filter for archive file attribute - WORK ONLY FOR Windows OS!
     for linux return actual a-atrib value (False for WHITE and True for BLACK - a-atrib not setting up)
     """
-    def __init__(self, color=filter_color.WHITE):
+
+    def __init__(self, color: filter_color = filter_color.WHITE):
         super().__init__(color=color)
         self._type = filter_type.ATTRIB
         self._compile()
@@ -524,7 +507,7 @@ class filterArchAttrib(abcFilter):
     def _compile(self):
         self._check_func = op.eq if self.color == filter_color.WHITE else op.ne
 
-    def check(self, strPath):
+    def check(self, strPath: str) -> bool:
         xr = subprocess.check_output(['attrib', strPath])
         try:
             return self._check_func(chr(xr[0]), 'A')
