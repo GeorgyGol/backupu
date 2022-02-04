@@ -87,7 +87,6 @@ class errorRule(abcNewFolderExistsRule):
     def new_path(self):
         raise FileExistsError
 
-
 class exsistOKRule(abcNewFolderExistsRule):
     def new_path(self):
         # new_name = '{name}'.format(name=self.base_name, dl=self.delimiter, num=next_num)
@@ -211,6 +210,89 @@ class dateRuleMSec(msecRule):
     def new_path(self):
         return self._path_created
 
+    def new_path(self):
+        lst = list(self.base_path.glob('*'))
+        lst_num = list()
+
+        for l in lst:
+            try:
+                lst_num.append(int(re.search(self._search_pattern, l.name).group('num')))
+            except AttributeError:
+                pass
+        try:
+            next_num = max(lst_num) + 1
+        except ValueError:
+            next_num = 1
+
+        new_name = '{name}{dl}{num}'.format(name=self.base_name, dl=self.delimiter, num=next_num)
+        new_name += self.archive()
+        new_path = self.base_path.joinpath(new_name)
+        if new_path.exists():
+            raise FileExistsError(new_path)
+
+        return new_path
+
+
+class msecRule(abcNewFolderExistsRule):
+    @property
+    def _search_pattern(self):
+        strPat = '{subname}{dl}(?P<num>\d+)'.format(subname=self.base_name, dl=self.delimiter)
+        strPat += self.archive(is_re=True)
+        strPat += '$'
+        return strPat
+
+    def new_path(self):
+        dtx = dt.datetime.now()
+        ep = dt.datetime(1970, 1, 1, 0, 0, 0)
+        msec_epo = int((dtx - ep).total_seconds() * 1e3)
+
+        new_name = '{name}{dl}{num}'.format(name=self.base_name, dl=self.delimiter, num=msec_epo)
+        new_name += self.archive()
+        new_path = self.base_path.joinpath(new_name)
+        if new_path.exists():
+            raise FileExistsError(new_path)
+
+        return new_path
+
+
+class dateRuleInc(incRule):
+    def __init__(self, date_format='%Y-%m-%d') -> None:
+        self._format = date_format
+
+    def new_path(self):
+        new_name_x = '{name}{dl}{date}'.format(name=self.base_name, dl=self.delimiter,
+                                               date=dt.datetime.now().strftime(self._format))
+        new_name = new_name_x + self.archive()
+
+        new_path = self.base_path.joinpath(new_name)
+        if new_path.exists():
+            old_name = self.base_name
+            self._base_name = new_name_x
+            new_name = super().new_path()
+            self._base_name = old_name
+            return self.base_path.joinpath(new_name)
+        else:
+            return new_path
+
+
+class dateRuleMSec(msecRule):
+    def __init__(self, date_format='%Y-%m-%d') -> None:
+        self._format = date_format
+
+    def new_path(self):
+        new_name_x = '{name}{dl}{date}'.format(name=self.base_name, dl=self.delimiter,
+                                               date=dt.datetime.now().strftime(self._format))
+        new_name = new_name_x + self.archive()
+
+        new_path = self.base_path.joinpath(new_name)
+        if new_path.exists():
+            old_name = self.base_name
+            self._base_name = new_name_x
+            new_name = super().new_path()
+            self._base_name = old_name
+            return self.base_path.joinpath(new_name)
+        else:
+            return new_path
 
 class newFolder:
     """
@@ -245,7 +327,6 @@ class newFolder:
         self._delimiter = delimiter
         self._work_path = ''
         self._archive = archive_format
-
         self._exists_rule = exsist_rule
         self._exists_rule.sub_init(base_path=self.base_path, base_name=self._base_name, delimiter=self._delimiter,
                                    archive=self._archive)

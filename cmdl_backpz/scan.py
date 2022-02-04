@@ -218,8 +218,14 @@ def scan():
     print('all files - ', sc.size(filtered=False), 'filteres - ', sc.size(filtered=True))
 
 
+from datetime import timedelta
+
 if __name__ == "__main__":
+    # scan()
 
-    scan()
+    dt = dt.datetime.now()
 
+    tdd = timedelta(days=365)
+
+    print(dt, dt + tdd)
     print('All done')

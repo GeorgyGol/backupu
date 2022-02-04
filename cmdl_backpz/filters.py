@@ -389,7 +389,6 @@ class filterFileSize(fAbcRange):
         return {'low_level': self.low_level, 'hight_level': self.hight_level,
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
-
 # =================== end file size filters (range, in bytes) =============================
 
 # file date change-create filters

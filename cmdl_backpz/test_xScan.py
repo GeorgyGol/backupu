@@ -1,3 +1,4 @@
+import datetime as dt
 from unittest import TestCase
 
 from cmdl_backpz.actions import set_archive_sttrib
@@ -5,9 +6,20 @@ from cmdl_backpz.scan import *
 
 
 class TestXScan(TestCase):
-    def setUp(self):
-        self.xScan = xScan()
-        self.xScan.scan()
+    @classmethod
+    def setUpClass(cls):
+        print('set up class')
+        cls.xScan = xScan()
+        cls.xScan.scan()
+
+    def setup(self):
+        self.xScan = TestXScan.xScan
+        # self.xScan.scan()
+
+        # def setUp(self):
+
+        # self.xScan = xScan()
+        # self.xScan.scan()
 
     def test_scan(self):
         """ test simple scan on current dir  """
@@ -93,18 +105,20 @@ class TestXScan(TestCase):
 
         self.xScan.scan()
 
+        dt_filter = self.xScan.files(filtered=False)[2]['change_date']
+        delta = dt.timedelta(days=366)
+
         fDtRangeW = filterFileDateRange(color=filter_color.WHITE,
-                                        low_date=dt.date(day=1, month=1, year=2021),
-                                        high_date=dt.date(day=1, month=1, year=2022))
+                                        low_date=dt_filter,
+                                        high_date=dt_filter + delta)
         fDtRangeB = filterFileDateRange(color=filter_color.BLACK,
-                                        low_date=dt.date(day=1, month=1, year=2021),
-                                        high_date=dt.date(day=1, month=1, year=2022))
+                                        high_date=dt_filter - dt.timedelta(days=1))
 
         self.xScan.set_filters(fDtRangeW)
         bW = self.xScan.size(filtered=True) >= 1
 
         self.xScan.set_filters(fDtRangeB)
-        bB = self.xScan.size(filtered=True) != 0  # file __init__.py changed 2020-01-28
+        bB = self.xScan.size(filtered=True) >= 1
 
         self.assertTrue(bW and bB)
 
@@ -114,9 +128,9 @@ class TestXScan(TestCase):
         self.xScan.scan()
 
         fDtRangeW = filterFileDateExact(color=filter_color.WHITE,
-                                        file_date=dt.date(day=28, month=1, year=2020))
+                                        file_date=dt.date(day=14, month=1, year=2022))
         fDtRangeB = filterFileDateExact(color=filter_color.BLACK,
-                                        file_date=dt.date(day=28, month=1, year=2020))
+                                        file_date=dt.date(day=14, month=1, year=2022))
 
         self.xScan.set_filters(fDtRangeW)
         bW = self.xScan.size(filtered=True) >= 1
