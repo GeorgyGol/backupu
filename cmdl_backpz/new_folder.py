@@ -88,6 +88,14 @@ class errorRule(abcNewFolderExistsRule):
         raise FileExistsError
 
 
+class exsistOKRule(abcNewFolderExistsRule):
+    def new_path(self):
+        # new_name = '{name}'.format(name=self.base_name, dl=self.delimiter, num=next_num)
+        new_name = self.base_name + self.archive()
+        new_path = self.base_path.joinpath(new_name)
+        return new_path
+
+
 class incRule(abcNewFolderExistsRule):
     @property
     def _search_pattern(self):
@@ -140,7 +148,6 @@ class msecRule(abcNewFolderExistsRule):
 
         return new_path
 
-
 class dateRuleInc(incRule):
     def __init__(self, date_format='%Y-%m-%d') -> None:
         self._format = date_format
@@ -160,25 +167,50 @@ class dateRuleInc(incRule):
         else:
             return new_path
 
-
 class dateRuleMSec(msecRule):
+    # def __init__(self, date_format='%Y-%m-%d') -> None:
+    #     self._format = date_format
+    #
+    # def new_path(self):
+    #     new_name_x = '{name}{dl}{date}'.format(name=self.base_name, dl=self.delimiter,
+    #                                            date=dt.datetime.now().strftime(self._format))
+    #     new_name = new_name_x + self.archive()
+    #
+    #     new_path = self.base_path.joinpath(new_name)
+    #     if new_path.exists():
+    #         old_name = self.base_name
+    #         self._base_name = new_name_x
+    #         new_name = super().new_path()
+    #         self._base_name = old_name
+    #         return self.base_path.joinpath(new_name)
+    #     else:
+    #         return new_path
+
     def __init__(self, date_format='%Y-%m-%d') -> None:
         self._format = date_format
 
-    def new_path(self):
+    def sub_init(self, base_path='', base_name='', delimiter='', archive=''):
+        super().sub_init(base_path, base_name, delimiter, archive)
+        self._path_created = self._create_new_path()
+
+    def _create_new_path(self):
         new_name_x = '{name}{dl}{date}'.format(name=self.base_name, dl=self.delimiter,
                                                date=dt.datetime.now().strftime(self._format))
         new_name = new_name_x + self.archive()
 
-        new_path = self.base_path.joinpath(new_name)
-        if new_path.exists():
+        _new_path = self.base_path.joinpath(new_name)
+        if _new_path.exists():
             old_name = self.base_name
             self._base_name = new_name_x
             new_name = super().new_path()
             self._base_name = old_name
             return self.base_path.joinpath(new_name)
         else:
-            return new_path
+            return _new_path
+
+    def new_path(self):
+        return self._path_created
+
 
 class newFolder:
     """
@@ -214,7 +246,21 @@ class newFolder:
         self._work_path = ''
         self._archive = archive_format
 
-        self.exists_rule = exsist_rule
+        self._exists_rule = exsist_rule
+        self._exists_rule.sub_init(base_path=self.base_path, base_name=self._base_name, delimiter=self._delimiter,
+                                   archive=self._archive)
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    @property
+    def delimiter(self):
+        return self._delimiter
+
+    @property
+    def subname(self):
+        return self._sub_name
 
     @property
     def exists_rule(self):

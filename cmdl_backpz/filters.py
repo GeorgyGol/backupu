@@ -221,19 +221,20 @@ class filterFileExt(filterFilePath):
     class for filter on file extension only
     """
 
+    def s_check(self, item):
+        return self._check_func(item['ext'])
+
     def __init__(self, color=filter_color.BLACK, case=string_case.STRICT, rule=''):
         super().__init__(color=color, case=case, rule=rule)
 
         self._type = filter_type.FILE
         self._subtype = filter_subtype.EXT
 
-    def _path_transform(self, path_string:str)->str:
-        """
-        get file extension from full path
-        :param path_string: string - full file path
-        :return: string - file ext
-        """
-        return os.path.splitext(path_string)[-1][1:]
+        if self.color == filter_color.BLACK:
+            self._check_func = lambda item: self._search.search(item) is None
+        else:
+            self._check_func = lambda item: self._search.search(item) is not None
+
 
 class filterDirName(filterFilePath):
     """

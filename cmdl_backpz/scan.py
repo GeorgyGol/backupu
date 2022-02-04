@@ -44,17 +44,28 @@ class xScan():
         htis function apply all class filter (WHITEs first) on saved all-files list and return filtered list
         :return: filtered list of files
         """
-        fltWhite = list(filter(lambda x: x.color == filter_color.WHITE, self._filters))
-        fltBlack = list(filter(lambda x: x.color == filter_color.BLACK, self._filters))
 
-        lstFls = self._lst_files
-        for fW in fltWhite:
-            lstFls = list(filter(fW.s_check, lstFls))
+        def white_apply(files):
+            fltWhite = list(filter(lambda x: x.color == filter_color.WHITE, self._filters))
+            if fltWhite:
+                res = list()
+                for fW in fltWhite:
+                    res += list(filter(fW.s_check, files))
+                return res
+            else:
+                return files
 
-        for fB in fltBlack:
-            lstFls = list(filter(fB.s_check, lstFls))
+        def black_apply(files):
+            fltBlack = list(filter(lambda x: x.color == filter_color.BLACK, self._filters))
+            if fltBlack:
+                res = files
+                for fB in fltBlack:
+                    res = list(filter(fB.s_check, res))
+                return res
+            else:
+                return files
 
-        return lstFls
+        return black_apply(white_apply(self._lst_files))
 
     def files(self, filtered: bool = False) -> list:
         """
@@ -128,10 +139,10 @@ def scan():
     # create xScan object
 
     # --- for scanning selected dir
-    # sc = xScan(start_path=r'U:\Golyshev\Py')
+    sc = xScan(start_path=r'/home/egor/git/jupyter/housing_model')
 
     # --- for scanning current dir
-    sc = xScan()
+    # sc = xScan()
     sc.scan()
     print(sc.base_path)
 
@@ -181,8 +192,17 @@ def scan():
 
     # set filters property for xScan
     # sc.set_filters(fDirB, fDirW)
-    sc.set_filters(fDtW)
+    # sc.set_filters(fDtW)
     # sc.set_filters(*filters)
+
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'sqlite\d?'),
+               filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+
+    sc.set_filters(*filters)
+    # cw.scanner.set_filters(*filters)
+
 
     # print filters from xScan
     for f in sc.filters:
@@ -190,10 +210,10 @@ def scan():
 
     # get filtered file list
     fl = sc.files()  # unfilterd scanned files
-    ffl = sc.files(filtered=False)  # filterd scanned files (apply all filters)
+    ffl = sc.files(filtered=True)  # filterd scanned files (apply all filters)
     #
     for f in ffl:
-        print(f['path'], f['change_date'])
+        print(f['path'], f['change_date'], f['ext'])
 
     print('all files - ', sc.size(filtered=False), 'filteres - ', sc.size(filtered=True))
 
