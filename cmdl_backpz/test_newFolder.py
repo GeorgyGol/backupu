@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest import TestCase
 
 from cmdl_backpz.new_folder import *

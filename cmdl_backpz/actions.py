@@ -18,18 +18,14 @@ XBackup_A - backup files filtered by archive-attribute;
     ================================================================================
     will be class for deleting given files (filterd or not) in source location
 """
-import datetime as dt
 import logging
-import os
-import re
-import subprocess
 import sys
 import zipfile
-from abc import ABC, abstractmethod
 from shutil import copy2
 
+from cmdl_backpz.new_folder import *
+from cmdl_backpz.scan import *
 
-# from cmdl_backpz import scan
 
 def set_archive_sttrib(file_path, AAtrib_ON=True):
     """
@@ -43,6 +39,189 @@ def set_archive_sttrib(file_path, AAtrib_ON=True):
         return subprocess.check_output(['attrib', '+a', file_path])
     else:
         return subprocess.check_output(['attrib', '-a', file_path])
+
+
+class xCopyZ:
+    """class for scanning source folder and copy filtered files into destination folder with source folder struct"""
+
+    def __init__(self, source_folder: str, destination_forled: str,
+                 new_folder: str = '', prefix: str = '', delimiter: str = '_',
+                 log_level=logging.DEBUG, scan_filters: list = list(),
+                 new_folder_rule: abcNewFolderExistsRule = exsistOKRule()) -> None:
+
+        self.source_folder = source_folder
+        self.destination_base = destination_forled
+
+        self._scan = xScan(start_path=self.source_folder)
+        self._scan.set_filters(*scan_filters)
+
+        self._new_fold = newFolder(strBaseFolder=self.destination_base,
+                                   sub_name=new_folder, prefix=prefix, delimiter=delimiter,
+                                   exsist_rule=new_folder_rule)
+        self._dest_folder = self._new_fold.folder
+
+        self._log_level = log_level
+        self._work_name = 'COPY'
+
+        self._setup_logger()
+
+    def _setup_logger(self):
+        print(self._dest_folder)
+        os.makedirs(self._dest_folder, exist_ok=True)
+
+        if self.new_folder.prefix:
+            logfile = self._dest_folder.joinpath('{}.log'.format(self.new_folder.prefix))
+        else:
+            logfile = self._dest_folder.joinpath('{}.log'.format(self._work_name))
+
+        self._log = logging.getLogger('console')
+        self._log.setLevel(self._log_level)
+        ch = logging.StreamHandler(stream=sys.stdout)
+        ch.setLevel(self._log_level)
+
+        fl = logging.FileHandler(logfile, mode='a')
+        fl.setLevel(logging.INFO)
+        self._log.addHandler(ch)
+        self._log.addHandler(fl)
+
+        self._log.info(
+            '{dt} : {work} work'.format(work=self._work_name, dt=dt.datetime.now().strftime('%Y-%m-%d %H:%M')))
+        self._log.info('SOURCE : {}'.format(str(self.source_folder)))
+        self._log.info('DEST   : {}'.format(str(self._dest_folder)))
+        self._log.info('SCAN FILTERS   :')
+        for f in self._scan.filters:
+            self._log.info(f)
+        self._log.info('=' * 100)
+
+        return self._log
+
+    @property
+    def source_folder(self):
+        return self._source
+
+    @source_folder.setter
+    def source_folder(self, value):
+        # TODO: dangerous - must be hidden
+        assert Path(value).exists(), 'source folder must exists'
+        self._source = value
+
+    @property
+    def destination_base(self):
+        return self._dest_base
+
+    @destination_base.setter
+    def destination_base(self, value):
+        # TODO: dangerous - must be hidden
+        assert Path(value).exists(), 'destination folder must exists'
+        self._dest_base = value
+
+    @property
+    def scanner(self):
+        # TODO: dangerous - must be hidden
+        return self._scan
+
+    @property
+    def new_folder(self):
+        # TODO: dangerous - must be hidden
+        return self._new_fold
+
+    def _create_dest_tree_folder(self, files: list, do_create_tree=True):
+        dest_fld = {Path(p).parent for p in files}
+
+        if not do_create_tree:
+            return
+
+        for dir in dest_fld:
+            try:
+                os.makedirs(dir, exist_ok=True)
+            except OSError:
+                self._log.error('Create folders tree OSError : {}'.format(dir))
+                os._exit(-1)
+        self._log.debug('create destination folders tree done')
+
+    def _do_scan(self):
+        self._scan.scan()
+        self._log.info('scan source done')
+
+        _files = self._scan.files(filtered=True)
+        _cnt_files = len(_files)
+
+        self._log.info('files in source {all_files} : after filters select {f_files} files'.format(
+            all_files=self._scan.size(filtered=False), f_files=_cnt_files))
+
+        all_weight = int(sum([f['size'] for f in self._scan.files(filtered=False)]) / 1e6)
+        flt_weight = int(sum([f['size'] for f in _files]) / 1e6)
+
+        self._log.info('size in source {all_files} (Mb) : filtered size {f_files} (Mb)'.format(
+            all_files=all_weight, f_files=flt_weight))
+
+        _src_files = [f['path'] for f in _files]
+
+        _dest_files = list(
+            map(lambda x: str(x['path']).replace(str(self._scan.base_path), str(self._dest_folder)), _files))
+
+        lp = list(zip(_src_files, _dest_files))
+        return lp
+
+    def _do_copy(self, src_dst, do_copy=True):
+        cnt_files = len(src_dst)
+        step = int(cnt_files / 100) or 1
+        _logDEBMess = '{f_num} from {f_cnt}: {src} --> {dst}'
+        cnt_error = 0
+
+        for i, nf in enumerate(src_dst):
+            try:
+                if do_copy:
+                    copy2(nf[0], nf[1])
+                else:
+                    with open(nf[0], 'rb') as flt:
+                        pass
+            except FileNotFoundError:
+                cnt_error += 1
+                self._log.error('FILE NOT FOUND - {file}'.format(file=nf[0]))
+
+            except PermissionError:
+                cnt_error += 1
+                self._log.error('PERMISSION ERROR - {file}'.format(file=nf[0]))
+
+            except:
+                cnt_error += 1
+                self._log.error('UNEXPECTED ERROR {err} - {file}'.format(err=sys.exc_info()[0], file=nf[0]))
+                print("Unexpected error:", sys.exc_info()[0], flush=True)
+
+            if self._log_level == logging.DEBUG:
+                try:
+                    self._log.debug(_logDEBMess.format(f_num=i, f_cnt=cnt_files, src=nf[0], dst=nf[1]))
+                except UnicodeEncodeError:
+                    self._log.error('something wrong with file name on print log')
+                    try:
+                        self._log.warning('something wrong with file name on print log - {}'.format(nf[1]))
+                    except:
+                        self._log.warning('something wrong with file name on print log')
+                except:
+                    self._log.error('UNEXPECTED ERROR WITH STATUS PRINT {}'.format(err=sys.exc_info()[0]))
+
+            elif (i % step) == 0:
+                print('*', end='', flush=True)
+        print('')
+
+    def run(self, do_copy=True, do_create_tree=True):
+
+        work_pair = self._do_scan()
+
+        self._log.info('-' * 100)
+        self._log.info('START {}:'.format(self._work_name))
+
+        if len(work_pair) == 0:
+            self._log.warning('nothing to {} - exit'.format(self._work_name))
+
+        self._create_dest_tree_folder([df[1] for df in work_pair])
+
+        self._do_copy(work_pair, do_copy=do_copy)
+
+        self._log.info('{} DONE'.format(self._work_name))
+        self._log.info(' ' * 100)
+
 
 
 class X_SPATH(ABC):
@@ -441,68 +620,26 @@ DEST PATH RULE - {pathrule}
 
 
 def copy():
-    f_extw = scan.x_extension_list(name='only ext', lst_ext=['csv', 'xml'], black=False)
-    f_extb = scan.x_extension_list(name='excl ext', lst_ext=['tmp', 'lnk'])
-    f_dirb = scan.x_folders(name='excl dirs', lst_folders=['@Recycle', ])
-    #p_csv @Recycle
-    # strSourceDir =  os.path.join('p:', os.path.sep)
-    # strTargetDir = os.path.join('d:', os.path.sep, 'p_csv')
+    # filters = [filterFileExt(color=filter_color.WHITE, rule = r'xls'),]
 
-    #x_subpath = x_path_copy(strTargetDir)
-    # x = XCopy_A(strWorkPath=r'\\Commd\Statistica', name='S copy 30032020',
-    #             strSavePath=r'G:\S')
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'sqlite\d?'),
+               filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+    # filters = [filterFileExt(color=filter_color.WHITE, rule=r'py'),
+    #            filterFileExt(color=filter_color.BLACK, rule=r'py')]
+    # filters= list()
 
-    x = XCopy_A(strWorkPath=r'\\l26-1305-003\d$', name='DBELO copy 15092020',
-                strSavePath=r'G:')
+    cw = xCopyZ(source_folder=r'/home/egor/git/jupyter/housing_model', log_level=logging.INFO,
+                destination_forled='/home/egor/T', new_folder='model', scan_filters=filters,
+                new_folder_rule=dateRuleInc())
 
-    # x.filters(f_extb, f_dirb)
-    #
-    # for i in os.walk(x.work_path):
-    #     print(i)
-    print(x)
+    cw.run()
 
-    x.copy()
-
-
-    # lst=x.scan()
-    # for fl in lst:
-    #     print(fl)
-
+    # print('.'*100)
 
 def main():
-    f_extb = scan.x_extension_list(name='excl ext', lst_ext=['accdb', 'csv', 'xml', 'psd', 'db'])
-    f_dirb = scan.x_folders(name='excl dirs', lst_folders=['Salnikov', 'from di', 'chat_log'])
-    f_nameb= scan.x_names(name='excl names', lst_names=['\~\$', ])
-
-    strSourceDir=r'\\Commd\Personal\golyshev\py'
-    strTargetDir=r'g:\u_golyshev'
-
-    # strSourceDir = r'd:\proba'
-    # strTargetDir = r'g:\egor'
-    #
-    # f_extb = scan.x_extension_list(name='excl ext', lst_ext=['arw', 'psd', 'db', ''])
-    # f_dirb = scan.x_black_folders(name='excl dirs', lst_folders=['Подшипник Мебиуса _ Иллюзии_files', 'lori', 'сайт'])
-
-    x_subpath=x_path_date_inc(strTargetDir, prefix='INC', month_format='%b')
-
-    x = XBackup_A(strWorkPath=strSourceDir, name='testing', strSavePath=strTargetDir, SaveSubFolderRule=x_subpath)
-
-    x.filters(f_extb, f_dirb, f_nameb)
-
-    # print(x)
-    # x.backup(full=True)
-    #x.backup(zip=True, work_type=WORK_TYPE.backup_diff)
-
-
-    # lst_files=x.scan(full=True)
-    # for fl in lst_files:
-    #     print(fl)
-    # print('*'*50)
-    # x_info=info.FolderInfo(x.work_path, file_list=lst_files)
-    # x_info.scan()
-    #
-    # print('sum - ', x_info.sum())
-    # print(x_info.sum_ext())
+    pass
 
 if __name__ == "__main__":
 

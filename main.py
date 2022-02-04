@@ -1,12 +1,11 @@
+import argparse
 import datetime as dt
 import os
 import re
-import subprocess
 import shutil
-import pandas as pd
-import argparse
+import subprocess
 
-from cmdl_backpz.info import FolderInfo
+import pandas as pd
 
 strWorkPath=r'd:\proba'
 black_lst_ext=['db', 'exe', 'psd']
