@@ -67,7 +67,7 @@ class xCopyZ:
 
     def _setup_logger(self):
         print(self._dest_folder)
-        os.makedirs(self._dest_folder, exist_ok=True)
+        os.makedirs(str(self._dest_folder), exist_ok=True)
 
         if self.new_folder.prefix:
             logfile = self._dest_folder.joinpath('{}.log'.format(self.new_folder.prefix))
@@ -79,7 +79,7 @@ class xCopyZ:
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(self._log_level)
 
-        fl = logging.FileHandler(logfile, mode='a')
+        fl = logging.FileHandler(str(logfile), mode='a')
         fl.setLevel(logging.INFO)
         self._log.addHandler(ch)
         self._log.addHandler(fl)
@@ -133,7 +133,7 @@ class xCopyZ:
 
         for dir in dest_fld:
             try:
-                os.makedirs(dir, exist_ok=True)
+                os.makedirs(str(dir), exist_ok=True)
             except OSError:
                 self._log.error('Create folders tree OSError : {}'.format(dir))
                 os._exit(-1)
@@ -630,8 +630,8 @@ def copy():
     #            filterFileExt(color=filter_color.BLACK, rule=r'py')]
     # filters= list()
 
-    cw = xCopyZ(source_folder=r'/home/egor/git/jupyter/housing_model', log_level=logging.INFO,
-                destination_forled='/home/egor/T', new_folder='model', scan_filters=filters,
+    cw = xCopyZ(source_folder=r'U:\Golyshev\Py', log_level=logging.INFO,
+                destination_forled=r'D:\ttt', new_folder='pycopytest', scan_filters=filters,
                 new_folder_rule=dateRuleInc())
 
     cw.run()
