@@ -82,11 +82,9 @@ class abcNewFolderExistsRule(ABC):
         """
         pass
 
-
 class errorRule(abcNewFolderExistsRule):
     def new_path(self):
         raise FileExistsError
-
 
 class exsistOKRule(abcNewFolderExistsRule):
     def new_path(self):
@@ -94,7 +92,6 @@ class exsistOKRule(abcNewFolderExistsRule):
         new_name = self.base_name + self.archive()
         new_path = self.base_path.joinpath(new_name)
         return new_path
-
 
 class incRule(abcNewFolderExistsRule):
     @property
@@ -125,7 +122,6 @@ class incRule(abcNewFolderExistsRule):
             raise FileExistsError(new_path)
 
         return new_path
-
 
 class msecRule(abcNewFolderExistsRule):
     @property
