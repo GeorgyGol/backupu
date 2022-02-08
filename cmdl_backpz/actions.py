@@ -1,27 +1,61 @@
-"""using FileList from scan for actions on files from scanned (and filtered) list
-XBackup_A - backup files filtered by archive-attribute;
-    make full backup (ignored archive attrib for making source-file list, but reset it for backuped files)
-         incremental backup (filtered files with raised archive attr, back its up and reset archve attr )
-    also can make full copy (completele ignore archive attribute)
-    can zip copy ar backup work
+"""Classes for do something actions on files
 
-    optionally for each backup or commission a separate subfolder is created in the target folder,
-    the subfolder is created according to the rule defined by the descendant of the X_SPATH class
+    How its work:
+    Setting up some action class by give it:
+    source dir path;
+    list of white or|and black filter for filter files by name, subpath, extension, date, date range, size range. White filters applies first, black filters applies on result of white filters work;
+    destination base dir - in this dir will be placed files from source
+    destination_subdir - subname for directory in destination base for root of source directory dir tree
+    prefix - prefix for subname for directory in destination base for root of source directory dir tree
+    delimiter - delimiter string for split prefix and subname for directory in destination base for root of source directory dir tree
 
-    in this module there are two make-subfolder-rules-class:
-    x_path_date_inc - make subfolder from type of work (copy, inc or full backup) and current date
-    x_path_copy - not making subfolders at all, working in target folder
+    so finaly root destination dir make from prefix, delimiter and destination_subdir as: <prefix><delimiter><destination_subdir>, and full path to copied ar backuped files will be: <destination_base>/<prefix><delimiter><destination_subdir>
 
-    each work can be logged, log-file placed in save-dir (using rulls-class), log-levels given by params,
-    records of each single file had writen have DEBUG level, errors have ERROR-level
+    new_folder_rule - class for create new root destination dir if directory with such name already exist.
+    archive_format - string for valid arhive file extension (zip for zip-archive) or empty string for acton with no arhivating
 
-    ================================================================================
-    will be class for deleting given files (filterd or not) in source location
+    example of use (for copy work):
+        # create filters for select xls(m|b|x), py (exclude pyc and ipynb) files
+        filters = [filterFileExt(color=filter_color.WHITE, rule=r'xls'),
+                   filterFileExt(color=filter_color.WHITE, rule=r'py'),
+                   filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+                   filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+
+        cw = xCopyZ(source_base_dir=r'/home/egor/git/jupyter/housing_model', log_level=logging.INFO,
+                    destination_base_dir='/home/egor/T', destination_subdir='model', scan_filters=filters,
+                    new_folder_rule=incRule())# , archive_format='zip')
+
+        # scan directory '/home/egor/git/jupyter/housing_model';
+        # filtering selected files;
+        # in base destination dir '/home/egor/T' create subdir 'model'; if this subdir alredy exist create subdir 'model_1' ('model_2' etc);
+        # copy selected source file to this subdir preserving the source directories structure
+
+        cw.run()
+
+    Casses:
+
+    abcActionZ - abstruct base action class.
+    Methods:
+        _do_scan - scan source directory tree, filter files by given filter rules
+        _do_copy - copy source files to destination directories (save source dirs tree struct)
+        _do_zip - copy source files to zip-archive file in destination base directory
+        _setup_logger - init logging object, save log-message in log-file, display its in console
+        _create_dest_tree_folder - create source directory tree inside destinationa base directory
+    Properties:
+         source_folder - return source directory full path
+         destination_base - return destination base directory full path
+    Absstuct method:
+        run - do some work (define in child class
+
+    Childs:
+    class xCopyZ - do copy files work
+
 """
 import logging
 import sys
 import zipfile
 from shutil import copy2
+from abc import ABC, abstractmethod
 
 from cmdl_backpz.new_folder import *
 from cmdl_backpz.scan import *
@@ -40,38 +74,68 @@ def set_archive_sttrib(file_path, AAtrib_ON=True):
     else:
         return subprocess.check_output(['attrib', '-a', file_path])
 
+class abcActionZ(ABC):
 
-class xCopyZ:
-    """class for scanning source folder and copy filtered files into destination folder with source folder struct"""
-
-    def __init__(self, source_folder: str, destination_forled: str,
-                 new_folder: str = '', prefix: str = '', delimiter: str = '_',
+    def __init__(self, source_base_dir: str, destination_base_dir: str,
+                 destination_subdir: str = '', prefix: str = '', delimiter: str = '_',
                  log_level=logging.DEBUG, scan_filters: list = list(),
-                 new_folder_rule: abcNewFolderExistsRule = exsistOKRule()) -> None:
+                 new_folder_rule: abcNewFolderExistsRule = errorRule(),
+                 archive_format:str = '') -> None:
+        """
+        :param source_base_dir: str or pathlike - root of source directory subtree
+        :param destination_base_dir: str of pathlike - root of destination subtree
+        :param destination_subdir: str - name for destination dir in destination base dir
+        :param prefix: str - prefix for result name for destination dir in destination base dir (may be name of work)
+        :param delimiter: str - delimiter for split prefix, subname and sufix in resulting name for destination dir in destination base dir
+        :param log_level: level for loggi-message
+        :param scan_filters: list - list of abcFilter-objects - for filter source files
+        :param new_folder_rule: abcNewFolderExistsRule's object, for resolve existing destination dir conflict
+        :param archive_format: str - empty string = no archive operation, any valid archive file extension - archive destination files
+        """
+        assert Path(source_base_dir).exists(), 'source dir must exists'
+        assert Path(destination_base_dir).exists(), 'destination base dir must exists'
 
-        self.source_folder = source_folder
-        self.destination_base = destination_forled
+        self._source = source_base_dir
+        self._dest_base = destination_base_dir
 
         self._scan = xScan(start_path=self.source_folder)
         self._scan.set_filters(*scan_filters)
 
         self._new_fold = newFolder(strBaseFolder=self.destination_base,
-                                   sub_name=new_folder, prefix=prefix, delimiter=delimiter,
-                                   exsist_rule=new_folder_rule)
+                                   sub_name=destination_subdir, prefix=prefix, delimiter=delimiter,
+                                   exsist_rule=new_folder_rule, archive_format=archive_format)
+
+        self._archive_format = archive_format
+
         self._dest_folder = self._new_fold.folder
 
         self._log_level = log_level
-        self._work_name = 'COPY'
-
         self._setup_logger()
+        self._post_work_action = lambda x: x
+        super().__init__()
+
+    @property
+    def source_folder(self):
+        return self._source
+
+    @property
+    def destination_base(self):
+        return self._dest_base
 
     def _setup_logger(self):
-        print(self._dest_folder)
-        os.makedirs(str(self._dest_folder), exist_ok=True)
+        """
+        setup logger object
+        create logger object with 2 handlers: stream (with given mesage level) and file (with logger.INFO level)
+        if result action work with archive file - create log file with name destination archive file and '.log' extension (instead of '.zip' extension); if destination is dir - create log-file with name of action in destination root dir
+        :return: log-object
+        """
+        if self._archive_format:
+            os.makedirs(str(self.destination_base), exist_ok=True)
+            logfile = re.sub('{}$'.format(self._archive_format), 'log', str( self._dest_folder))
 
-        if self.new_folder.prefix:
-            logfile = self._dest_folder.joinpath('{}.log'.format(self.new_folder.prefix))
         else:
+            # if archive = None make destination sub-dir (for this work) in destination base dir
+            os.makedirs(self._dest_folder, exist_ok=True)
             logfile = self._dest_folder.joinpath('{}.log'.format(self._work_name))
 
         self._log = logging.getLogger('console')
@@ -79,15 +143,20 @@ class xCopyZ:
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(self._log_level)
 
-        fl = logging.FileHandler(str(logfile), mode='a')
+        fl = logging.FileHandler(logfile, mode='a')
         fl.setLevel(logging.INFO)
         self._log.addHandler(ch)
         self._log.addHandler(fl)
 
-        self._log.info(
-            '{dt} : {work} work'.format(work=self._work_name, dt=dt.datetime.now().strftime('%Y-%m-%d %H:%M')))
+        if self._archive_format:
+            self._log.info(
+                '{dt} : {work}({arch}) work'.format(work=self._work_name, dt=dt.datetime.now().strftime('%Y-%m-%d %H:%M'), arch=self._archive_format))
+        else:
+            self._log.info(
+                '{dt} : {work} work'.format(work=self._work_name, dt=dt.datetime.now().strftime('%Y-%m-%d %H:%M')))
         self._log.info('SOURCE : {}'.format(str(self.source_folder)))
         self._log.info('DEST   : {}'.format(str(self._dest_folder)))
+        self._log.info('')
         self._log.info('SCAN FILTERS   :')
         for f in self._scan.filters:
             self._log.info(f)
@@ -95,15 +164,13 @@ class xCopyZ:
 
         return self._log
 
-    @property
-    def source_folder(self):
-        return self._source
+    def _create_dest_tree_folder(self, files: list, do_create_tree:bool=True):
+        """
+        Create destination directory subtree
 
-    @source_folder.setter
-    def source_folder(self, value):
-        # TODO: dangerous - must be hidden
-        assert Path(value).exists(), 'source folder must exists'
-        self._source = value
+        :param files: list of destinations files. Its made from source filtered files list by replace base source directiory name to destination directory base name
+        :param do_create_tree: True - do create directory subtree on the disk; False - do nothing
+        :return: None
 
     @property
     def destination_base(self):
@@ -133,7 +200,7 @@ class xCopyZ:
 
         for dir in dest_fld:
             try:
-                os.makedirs(str(dir), exist_ok=True)
+                os.makedirs(dir, exist_ok=True)
             except OSError:
                 self._log.error('Create folders tree OSError : {}'.format(dir))
                 os._exit(-1)
@@ -630,8 +697,8 @@ def copy():
     #            filterFileExt(color=filter_color.BLACK, rule=r'py')]
     # filters= list()
 
-    cw = xCopyZ(source_folder=r'U:\Golyshev\Py', log_level=logging.INFO,
-                destination_forled=r'D:\ttt', new_folder='pycopytest', scan_filters=filters,
+    cw = xCopyZ(source_folder=r'/home/egor/git/jupyter/housing_model', log_level=logging.INFO,
+                destination_forled='/home/egor/T', new_folder='model', scan_filters=filters,
                 new_folder_rule=dateRuleInc())
 
     cw.run()
