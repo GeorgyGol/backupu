@@ -65,7 +65,18 @@ class xScan():
             else:
                 return files
 
-        return black_apply(white_apply(self._lst_files))
+        def red_apply(files):
+            """ red means exact"""
+            fltRed = list(filter(lambda x: x.color == filter_color.RED, self._filters))
+            if fltRed:
+                res = files
+                for fB in fltRed:
+                    res = list(filter(fB.s_check, res))
+                return res
+            else:
+                return files
+
+        return red_apply(black_apply(white_apply(self._lst_files)))
 
     def files(self, filtered: bool = False) -> list:
         """
@@ -98,7 +109,8 @@ class xScan():
 
             return {'path': item, 'change_date': dt.datetime.fromtimestamp(st.st_mtime).date(),
                     'create_date': dt.datetime.fromtimestamp(st.st_ctime).date(),
-                    'size': st.st_size, 'mode': st.st_mode, 'ext': item.split('.')[-1], 'A-attr': isA}
+                    'size': st.st_size, 'mode': st.st_mode, 'ext': item.split('.')[-1], 'A-attr': isA,
+                    'name': Path(item).stem}
 
         lstd = [[os.path.join(i[0], f) for f in i[2]] for i in os.walk(self.base_path)]
         self._lst_files = [info(item) for sublist in lstd for item in sublist]
@@ -218,14 +230,8 @@ def scan():
     print('all files - ', sc.size(filtered=False), 'filteres - ', sc.size(filtered=True))
 
 
-from datetime import timedelta
-
 if __name__ == "__main__":
     # scan()
-
-    dt = dt.datetime.now()
-
-    tdd = timedelta(days=365)
-
-    print(dt, dt + tdd)
+    for f in os.listdir('..'):
+        print(f)
     print('All done')

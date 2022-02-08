@@ -6,8 +6,12 @@ this class - a list of dictionaries with file attributes (name, full path, date,
     ONE RULE = ONE FILTER
 
     all filters based on abstract class abcFilter;
-    filters can be BLACK or WHITE: White means 'only selected rules', Black means 'all but selected rules'
-    WHITE filters applyes first
+    filters can be BLACK, WHITE or RED:
+        White means 'selected rules pass',
+        Black means 'all but selected rules pass',
+        Red means 'only selected rules pass' (strict White filter)
+    WHITE filters applyes first, next BLACK, RED - last
+    No filters means 'all files pass'
 
     filters in this module are:
        on file name - by re
@@ -32,8 +36,9 @@ import pathlib
 import re
 import subprocess
 from abc import ABC, abstractmethod
+from enum import Enum  # , auto
+from pathlib import Path
 
-from enum import Enum#, auto
 
 class filter_type(Enum):
     PATH = 1 #auto()
@@ -60,6 +65,7 @@ class string_case(Enum):
 class filter_color(Enum):
     WHITE = 1
     BLACK = 2
+    RED = 3
 
 
 class abcFilter(ABC):
@@ -214,7 +220,9 @@ class filterFileName(filterFilePath):
         :param path_string: string - full file path
         :return: string - file name
         """
-        return os.path.splitext(os.path.split(path_string)[-1])[0]
+        # print(os.path.splitext(os.path.split(path_string)[-1])[0], Path(path_string).stem, Path(path_string).name)
+        _x = Path(path_string).stem
+        return Path(path_string).stem
 
 class filterFileExt(filterFilePath):
     """

@@ -1,4 +1,4 @@
-"""Classes for do something actions on files
+"""Classes for do something actions with source files (copy or backup)
 
     How its work:
     Setting up some action class by give it:
@@ -72,6 +72,11 @@ def set_archive_sttrib(file_path, AAtrib_ON=True):
         return subprocess.check_output(['attrib', '+a', file_path])
     else:
         return subprocess.check_output(['attrib', '-a', file_path])
+
+
+def file_size2mb(size_in_bytes: int) -> int:
+    return int(size_in_bytes / (1024 ** 2))
+
 
 class abcActionZ(ABC):
 
@@ -186,7 +191,7 @@ class abcActionZ(ABC):
                 os._exit(-1)
         self._log.debug('create destination folders tree done')
 
-    def _do_scan(self, only_source_operation: bool = False) -> list:
+    def _do_scan(self) -> list:
         """
         scan source directory subtree for all files;
         filter source files ;
@@ -204,30 +209,27 @@ class abcActionZ(ABC):
         self._log.info('files in source {all_files} : after filters select {f_files} files'.format(
             all_files=self._scan.size(filtered=False), f_files=_cnt_files))
 
-        all_weight = int(sum([f['size'] for f in self._scan.files(filtered=False)]) / 1e6)
-        flt_weight = int(sum([f['size'] for f in _files]) / 1e6)
+        all_weight = file_size2mb(sum([f['size'] for f in self._scan.files(filtered=False)]))
+        flt_weight = file_size2mb(sum([f['size'] for f in _files]))
 
         self._log.info('size in source {all_files} (Mb) : filtered size {f_files} (Mb)'.format(
             all_files=all_weight, f_files=flt_weight))
 
-        if only_source_operation:
-            return _files
+        _src_files = [f['path'] for f in _files]
+
+        if self._archive_format:
+            strSubDst = ''  # ''{0}'.format(self._new_fold._base_name)
+            _dest_files = list(
+                map(lambda x: str(x['path']).replace(str(self.source_folder), strSubDst), _files))
+
         else:
-            _src_files = [f['path'] for f in _files]
+            _dest_files = list(
+                map(lambda x: str(x['path']).replace(str(self.source_folder), str(self._dest_folder)), _files))
+            # _dest_files = list(
+            #     map(lambda x: str(x['path']).replace(str(self._scan.base_path), str(self._dest_folder)), _files))
 
-            if self._archive_format:
-                strSubDst = ''  # ''{0}'.format(self._new_fold._base_name)
-                _dest_files = list(
-                    map(lambda x: str(x['path']).replace(str(self.source_folder), strSubDst), _files))
-
-            else:
-                _dest_files = list(
-                    map(lambda x: str(x['path']).replace(str(self.source_folder), str(self._dest_folder)), _files))
-                # _dest_files = list(
-                #     map(lambda x: str(x['path']).replace(str(self._scan.base_path), str(self._dest_folder)), _files))
-
-            lp = list(zip(_src_files, _dest_files))
-            return lp
+        lp = list(zip(_src_files, _dest_files))
+        return lp
 
     def _do_copy(self, src_dst, do_copy=True):
         cnt_files = len(src_dst)
@@ -313,7 +315,6 @@ class abcActionZ(ABC):
     def run(self, do_action=True, do_create_dest_tree=True):
         pass
 
-
 class xCopyZ(abcActionZ):
     """class for scanning source dir and copy filtered files into destination dir"""
 
@@ -354,10 +355,20 @@ class xCopyZ(abcActionZ):
 
         self._log.info(' ' * 100)
 
+
+class xBackupZ(xCopyZ):
+
+    def __init__(self, source_base_dir: str, destination_base_dir: str, destination_subdir: str = '', prefix: str = '',
+                 delimiter: str = '_', log_level=logging.DEBUG, scan_filters: list = list(),
+                 new_folder_rule: abcNewFolderExistsRule = exsistOKRule(), archive_format: str = '') -> None:
+        super().__init__(source_base_dir, destination_base_dir, destination_subdir, prefix, delimiter, log_level,
+                         scan_filters, new_folder_rule, archive_format)
+
+
 def copy():
     # filters = [filterFileExt(color=filter_color.WHITE, rule = r'xls'),]
 
-    filters = [  # filterFileExt(color=filter_color.WHITE, rule=r'xls'),
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'xls'),
                filterFileExt(color=filter_color.WHITE, rule=r'py'),
                filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
                filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
@@ -371,11 +382,13 @@ def copy():
     #             new_folder_rule=incRule())# , archive_format='zip')
 
     sub_name = 'CPYTST_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
-    cw = xCopyZ(source_base_dir=r'U:\Golyshev\Py', log_level=logging.INFO,
-                destination_base_dir=r'D:\ttt', destination_subdir=sub_name, scan_filters=filters,
-                new_folder_rule=incRule(), archive_format='zip')
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    # cw = xCopyZ(source_base_dir=smb_src, log_level=logging.INFO,
+    #             destination_base_dir=r'/home/egor/T', destination_subdir=sub_name, scan_filters=filters,
+    #             new_folder_rule=incRule())#, archive_format='zip')
 
-    cw.run()
+    # cw.run()
+
 
     # print('.'*100)
 
@@ -384,7 +397,7 @@ def main():
 
 if __name__ == "__main__":
     copy()
-
+    # print(os.listdir('/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'))
     print('ALL DONE')
 
 
