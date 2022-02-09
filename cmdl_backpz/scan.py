@@ -16,6 +16,29 @@ import platform
 from cmdl_backpz.filters import *
 
 
+def file_info(item: str) -> dict:
+    """
+    return dict() with file metadata
+    :param item: str or pathlike - path to file; file must exists
+    :return: dict with file info: path, change date, create date, size in bytes, mode, extension, file name, arhive attrubute
+    :raise - errors from os.stat
+    """
+    st = os.stat(item)
+    # x = dt.datetime.fromtimestamp(st.st_mtime).date()
+    try:
+        if platform.system() == 'Windows':
+            xr = subprocess.check_output(['attrib', item])
+            isA = chr(xr[0]) == 'A'
+        else:
+            isA = False
+    except IndexError:
+        isA = False
+
+    return {'path': item, 'change_date': dt.datetime.fromtimestamp(st.st_mtime),
+            'create_date': dt.datetime.fromtimestamp(st.st_ctime),
+            'size': st.st_size, 'mode': st.st_mode, 'ext': item.split('.')[-1], 'A-attr': isA,
+            'name': Path(item).stem}
+
 class xScan():
     """
     class for scanning source dir with sub-dirs;
@@ -76,7 +99,10 @@ class xScan():
             else:
                 return files
 
-        return red_apply(black_apply(white_apply(self._lst_files)))
+        res = red_apply(black_apply(white_apply(self._lst_files)))
+
+        _ = {f['path']: f for f in res}  # for drop path duplicates
+        return list(_.values())
 
     def files(self, filtered: bool = False) -> list:
         """
@@ -94,26 +120,8 @@ class xScan():
         scan source base path and making list of files
         :return: list of files with file info (full name + attribs)
         """
-
-        def info(item):
-            st = os.stat(item)
-            # x = dt.datetime.fromtimestamp(st.st_mtime).date()
-            try:
-                if platform.system() == 'Windows':
-                    xr = subprocess.check_output(['attrib', item])
-                    isA = chr(xr[0]) == 'A'
-                else:
-                    isA = False
-            except IndexError:
-                isA = False
-
-            return {'path': item, 'change_date': dt.datetime.fromtimestamp(st.st_mtime).date(),
-                    'create_date': dt.datetime.fromtimestamp(st.st_ctime).date(),
-                    'size': st.st_size, 'mode': st.st_mode, 'ext': item.split('.')[-1], 'A-attr': isA,
-                    'name': Path(item).stem}
-
         lstd = [[os.path.join(i[0], f) for f in i[2]] for i in os.walk(self.base_path)]
-        self._lst_files = [info(item) for sublist in lstd for item in sublist]
+        self._lst_files = [file_info(item) for sublist in lstd for item in sublist]
 
         return self._lst_files
 

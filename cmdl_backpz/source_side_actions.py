@@ -93,8 +93,13 @@ class xInfoZ(abcActionOnSource):
 if __name__ == '__main__':
     smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
 
-    filters = [filterFileExt(color=filter_color.RED, rule=r'(pdf)|(xls.?)|(doc.?)')]
-
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'txt\b'),
+               filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileName(color=filter_color.WHITE, rule=r'Голышев'),
+               filterFileExt(color=filter_color.WHITE, rule=r'pdf'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb'),
+               ]
     xi = xInfoZ(source_base_dir=smb_src, log_level=logging.INFO,
                 scan_filters=filters)
     pdf = xi.run()
