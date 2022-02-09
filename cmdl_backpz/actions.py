@@ -1,4 +1,4 @@
-"""Classes for do something actions on files
+"""Classes for do something actions with source files (copy or backup)
 
     How its work:
     Setting up some action class by give it:
@@ -60,7 +60,7 @@ from cmdl_backpz.new_folder import *
 from cmdl_backpz.scan import *
 
 
-def set_archive_sttrib(file_path, AAtrib_ON=True):
+def set_archive_sttrib(file_path, AAtrib_ON=False):
     """
     Switch UO or DOWN archive file attribute - work on MS Windows OS
     :param file_path:
@@ -72,6 +72,11 @@ def set_archive_sttrib(file_path, AAtrib_ON=True):
         return subprocess.check_output(['attrib', '+a', file_path])
     else:
         return subprocess.check_output(['attrib', '-a', file_path])
+
+
+def file_size2mb(size_in_bytes: int) -> int:
+    return int(size_in_bytes / (1024 ** 2))
+
 
 class abcActionZ(ABC):
 
@@ -121,21 +126,23 @@ class abcActionZ(ABC):
     def destination_base(self):
         return self._dest_base
 
-    def _setup_logger(self):
+    def _setup_logger(self, log_file_name=''):
         """
         setup logger object
         create logger object with 2 handlers: stream (with given mesage level) and file (with logger.INFO level)
         if result action work with archive file - create log file with name destination archive file and '.log' extension (instead of '.zip' extension); if destination is dir - create log-file with name of action in destination root dir
         :return: log-object
         """
+        filename = log_file_name or self._work_name
+
         if self._archive_format:
             os.makedirs(str(self.destination_base), exist_ok=True)
-            logfile = re.sub('{}$'.format(self._archive_format), 'log', str( self._dest_folder))
 
+            logfile = str(Path(self.destination_base).joinpath('{0}({1}).log'.format(filename, self._dest_folder.stem)))
         else:
             # if archive = None make destination sub-dir (for this work) in destination base dir
             os.makedirs(str(self._dest_folder), exist_ok=True)
-            logfile = str(self._dest_folder.joinpath('{}.log'.format(self._work_name)))
+            logfile = str(self._dest_folder.joinpath('{}.log'.format(filename)))
 
         self._log = logging.getLogger('console')
         self._log.setLevel(self._log_level)
@@ -155,6 +162,9 @@ class abcActionZ(ABC):
                 '{dt} : {work} work'.format(work=self._work_name, dt=dt.datetime.now().strftime('%Y-%m-%d %H:%M')))
         self._log.info('SOURCE : {}'.format(str(self.source_folder)))
         self._log.info('DEST   : {}'.format(str(self._dest_folder)))
+        self._log.info('')
+        self._log.info('WORK ON OS : {}'.format(platform.system()))
+        self._log.debug('LOG FILE : {}'.format(logfile))
         self._log.info('')
         self._log.info('SCAN FILTERS   :')
         for f in self._scan.filters:
@@ -186,7 +196,7 @@ class abcActionZ(ABC):
                 os._exit(-1)
         self._log.debug('create destination folders tree done')
 
-    def _do_scan(self, only_source_operation: bool = False) -> list:
+    def _do_scan(self) -> list:
         """
         scan source directory subtree for all files;
         filter source files ;
@@ -204,30 +214,27 @@ class abcActionZ(ABC):
         self._log.info('files in source {all_files} : after filters select {f_files} files'.format(
             all_files=self._scan.size(filtered=False), f_files=_cnt_files))
 
-        all_weight = int(sum([f['size'] for f in self._scan.files(filtered=False)]) / 1e6)
-        flt_weight = int(sum([f['size'] for f in _files]) / 1e6)
+        all_weight = file_size2mb(sum([f['size'] for f in self._scan.files(filtered=False)]))
+        flt_weight = file_size2mb(sum([f['size'] for f in _files]))
 
         self._log.info('size in source {all_files} (Mb) : filtered size {f_files} (Mb)'.format(
             all_files=all_weight, f_files=flt_weight))
 
-        if only_source_operation:
-            return _files
+        _src_files = [f['path'] for f in _files]
+
+        if self._archive_format:
+            strSubDst = ''  # ''{0}'.format(self._new_fold._base_name)
+            _dest_files = list(
+                map(lambda x: str(x['path']).replace(str(self.source_folder), strSubDst), _files))
+
         else:
-            _src_files = [f['path'] for f in _files]
+            _dest_files = list(
+                map(lambda x: str(x['path']).replace(str(self.source_folder), str(self._dest_folder)), _files))
+            # _dest_files = list(
+            #     map(lambda x: str(x['path']).replace(str(self._scan.base_path), str(self._dest_folder)), _files))
 
-            if self._archive_format:
-                strSubDst = ''  # ''{0}'.format(self._new_fold._base_name)
-                _dest_files = list(
-                    map(lambda x: str(x['path']).replace(str(self.source_folder), strSubDst), _files))
-
-            else:
-                _dest_files = list(
-                    map(lambda x: str(x['path']).replace(str(self.source_folder), str(self._dest_folder)), _files))
-                # _dest_files = list(
-                #     map(lambda x: str(x['path']).replace(str(self._scan.base_path), str(self._dest_folder)), _files))
-
-            lp = list(zip(_src_files, _dest_files))
-            return lp
+        lp = list(zip(_src_files, _dest_files))
+        return lp
 
     def _do_copy(self, src_dst, do_copy=True):
         cnt_files = len(src_dst)
@@ -275,6 +282,10 @@ class abcActionZ(ABC):
 
     def _do_zip(self, src_dst):
         cnt_files = len(src_dst)
+        if cnt_files == 0:
+            self._log.info('nothing to zip')
+            return
+
         step = int(cnt_files / 100) or 1
         _logDEBMess = '{f_num} from {f_cnt}: {src} --> {dst}'
         cnt_error = 0
@@ -313,7 +324,6 @@ class abcActionZ(ABC):
     def run(self, do_action=True, do_create_dest_tree=True):
         pass
 
-
 class xCopyZ(abcActionZ):
     """class for scanning source dir and copy filtered files into destination dir"""
 
@@ -340,6 +350,8 @@ class xCopyZ(abcActionZ):
 
         if len(work_pair) == 0:
             self._log.warning('nothing to {} - exit'.format(self._work_name))
+            self._log.info(' ' * 100)
+            return
 
         if self._archive_format:
             self._do_zip(work_pair)
@@ -354,10 +366,103 @@ class xCopyZ(abcActionZ):
 
         self._log.info(' ' * 100)
 
+
+class backup_types(Enum):
+    FULL = 'FULL BACKUP'
+    INC = 'INCREMENTAL BACKUP'
+
+class xBackupZ(xCopyZ):
+    """
+    class for BACKUP work
+    work like COPY, by now have two regime of work:
+      FULL BACKUP - copy all selected files to destination; switch off a-attrib for copied files (if use_A_atrib = True)
+      INC BACKUP - add to given filters list filter a-attrib of file is switched on (if use_A_atrib = True) or find in desination directory on second-level sub-dirs in destination all *BACKUP*.log files, get last date from this list and add filter for date more, then this, to the given filters list. Then copy selected files to destination.
+
+      For INC BACKUP a-attrib and date range for last date of log file filters color setas RED
+    """
+
+    def __init__(self, source_base_dir: str,
+                 destination_base_dir: str, destination_subdir: str = '', prefix: str = '', delimiter: str = '_',
+                 log_level=logging.DEBUG, scan_filters: list = list(), backup_type: backup_types = backup_types.FULL,
+                 use_A_atrib: bool = True, new_folder_rule: abcNewFolderExistsRule = incRule(),
+                 archive_format: str = '') -> None:
+        """
+
+        :param source_base_dir: str or pathlike - root of source directory subtree
+        :param destination_base_dir: str of pathlike - root of destination subtree
+        :param destination_subdir: str - name for destination dir in destination base dir
+        :param prefix: str - prefix for result name for destination dir in destination base dir (may be name of work)
+        :param delimiter: str - delimiter for split prefix, subname and sufix in resulting name for destination dir in destination base dir
+        :param log_level: level for loggi-message
+        :param scan_filters: list - list of abcFilter-objects - for filter source files
+        :param new_folder_rule: abcNewFolderExistsRule's object, for resolve existing destination dir conflict
+        :param archive_format: str - empty string = no archive operation, any valid archive file extension - archive destination files
+        :param backup_type: backup_types - define Full or Incremental backup
+        :param use_A_atrib: bool - True = try to use archive attribute of file
+        """
+        assert Path(source_base_dir).exists(), 'source dir must exists'
+        assert Path(destination_base_dir).exists(), 'destination base dir must exists'
+
+        self._work_name = backup_type.value
+        self._work_type = backup_type
+
+        self._source = source_base_dir
+        self._dest_base = destination_base_dir
+
+        self._scan = xScan(start_path=self.source_folder)
+
+        self._archive_format = archive_format
+        self._new_fold = newFolder(strBaseFolder=self.destination_base,
+                                   sub_name=destination_subdir, prefix=prefix, delimiter=delimiter,
+                                   exsist_rule=new_folder_rule, archive_format=archive_format)
+        self._dest_folder = self._new_fold.folder
+
+        self._use_A_atrib = (platform.system() == 'Windows') and use_A_atrib
+
+        if self._work_type == backup_types.FULL:
+            # full backup copy all selected files and, if OS Windows and use a-atrib, switch archive file attrib off
+            pass
+        elif self._work_type == backup_types.INC:
+            if self._use_A_atrib:
+                scan_filters.append(filterArchAttrib(color=filter_color.RED))
+            else:
+                scan_filters.append(filterFileDateRange(color=filter_color.RED,
+                                                        low_date=self.find_last_backup_date()))
+
+        self._scan.set_filters(*scan_filters)
+
+        self._log_level = log_level
+        self._setup_logger()
+
+        if self._use_A_atrib:
+            self._post_work_action = set_archive_sttrib
+        else:
+            self._post_work_action = lambda x: x
+        self._log.info('!' * 100)
+        self._log.info('use Archive file attribute : {}'.format(self._use_A_atrib))
+        self._log.info('!' * 100)
+
+    def find_last_backup_date(self):
+        """
+        for INCREMENTAL backup: find all *BACKUP*.log' files in destination base directory, and in second-level subdirs for destination base dir; select last date (with time), return it for use in date range filter as low level date
+        :return: date of last written backup log file
+        """
+        lst = list(Path(self.destination_base).glob('*/*BACKUP*.log'))
+        lst += list(Path(self.destination_base).glob('*BACKUP*.log'))
+        f_info = [file_info(str(f)) for f in lst]
+        # for f in f_info:
+        #     print(f['path'], f['change_date'])
+        try:
+            return max([f['change_date'] for f in f_info])
+        except ValueError:
+            return dt.datetime(day=1, month=1, year=1970)
+        # for l in f_info:
+        #     print(l)
+
 def copy():
     # filters = [filterFileExt(color=filter_color.WHITE, rule = r'xls'),]
 
-    filters = [  # filterFileExt(color=filter_color.WHITE, rule=r'xls'),
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'xls'),
                filterFileExt(color=filter_color.WHITE, rule=r'py'),
                filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
                filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
@@ -371,10 +476,49 @@ def copy():
     #             new_folder_rule=incRule())# , archive_format='zip')
 
     sub_name = 'CPYTST_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
-    cw = xCopyZ(source_base_dir=r'U:\Golyshev\Py', log_level=logging.INFO,
-                destination_base_dir=r'D:\ttt', destination_subdir=sub_name, scan_filters=filters,
-                new_folder_rule=incRule(), archive_format='zip')
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    # cw = xCopyZ(source_base_dir=smb_src, log_level=logging.INFO,
+    #             destination_base_dir=r'/home/egor/T', destination_subdir=sub_name, scan_filters=filters,
+    #             new_folder_rule=incRule())#, archive_format='zip')
 
+    # cw.run()
+
+
+    # print('.'*100)
+
+
+def backup():
+    # filters = [filterFileExt(color=filter_color.WHITE, rule = r'xls'),]
+
+    # filters = [filterFileExt(color=filter_color.WHITE, rule=r'xls'),
+    #            filterFileExt(color=filter_color.WHITE, rule=r'py'),
+    #            filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+    #            filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+    # filters = [filterFileExt(color=filter_color.WHITE, rule=r'py'),
+    #            filterFileExt(color=filter_color.BLACK, rule=r'py')]
+    # filters= list()
+
+    # sub_name = 'model_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
+    # cw = xCopyZ(source_base_dir=r'/home/egor/git/jupyter/housing_model', log_level=logging.INFO,
+    #             destination_base_dir='/home/egor/T', destination_subdir=sub_name, scan_filters=filters,
+    #             new_folder_rule=incRule())# , archive_format='zip')
+
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'txt\b'),
+               filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileName(color=filter_color.WHITE, rule=r'Голышев'),
+               filterFileExt(color=filter_color.WHITE, rule=r'pdf'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb'),
+               ]
+
+    sub_name = 'BACKUP_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    cw = xBackupZ(source_base_dir=smb_src, log_level=logging.INFO, backup_type=backup_types.INC,
+                  destination_base_dir=r'/home/egor/T', destination_subdir=sub_name, scan_filters=filters,
+                  prefix='INC',
+                  new_folder_rule=incRule(), archive_format='zip')
+
+    # cw.find_last_backup_date()
     cw.run()
 
     # print('.'*100)
@@ -382,9 +526,12 @@ def copy():
 def main():
     pass
 
-if __name__ == "__main__":
-    copy()
 
+if __name__ == "__main__":
+    # copy()
+    backup()
+    # print(os.listdir('/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'))
+    # print(backup_type.FULL.value)
     print('ALL DONE')
 
 

@@ -6,8 +6,13 @@ this class - a list of dictionaries with file attributes (name, full path, date,
     ONE RULE = ONE FILTER
 
     all filters based on abstract class abcFilter;
-    filters can be BLACK or WHITE: White means 'only selected rules', Black means 'all but selected rules'
-    WHITE filters applyes first
+    filters can be BLACK, WHITE or RED:
+        White means 'selected rules pass',
+        Black means 'all but selected rules pass',
+        Red means 'only selected rules pass' (strict White filter)
+
+    WHITE filters applyes first, next BLACK, RED - last
+    No filters means 'all files pass'
 
     filters in this module are:
        on file name - by re
@@ -32,8 +37,9 @@ import pathlib
 import re
 import subprocess
 from abc import ABC, abstractmethod
+from enum import Enum  # , auto
+from pathlib import Path
 
-from enum import Enum#, auto
 
 class filter_type(Enum):
     PATH = 1 #auto()
@@ -60,6 +66,7 @@ class string_case(Enum):
 class filter_color(Enum):
     WHITE = 1
     BLACK = 2
+    RED = 3
 
 
 class abcFilter(ABC):
@@ -214,7 +221,9 @@ class filterFileName(filterFilePath):
         :param path_string: string - full file path
         :return: string - file name
         """
-        return os.path.splitext(os.path.split(path_string)[-1])[0]
+        # print(os.path.splitext(os.path.split(path_string)[-1])[0], Path(path_string).stem, Path(path_string).name)
+        _x = Path(path_string).stem
+        return Path(path_string).stem
 
 class filterFileExt(filterFilePath):
     """
@@ -261,11 +270,14 @@ class filterDirName(filterFilePath):
 class fAbcRange(abcFilter):
 
     def _compile(self):
-        opl = op.ge if self.left_margin else op.gt
-        opr = op.le if self.right_margin else op.lt
-
-        opf = op.not_ if self.color == filter_color.BLACK else op.truth
-        self._check_func = lambda x: opf(opl(x, self.low_level) & opr(x, self.hight_level))
+        if self.color in [filter_color.WHITE, filter_color.RED]:
+            opl = op.ge if self.left_margin else op.gt
+            opr = op.le if self.right_margin else op.lt
+            self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
+        else:
+            opl = op.le if self.left_margin else op.lt
+            opr = op.ge if self.right_margin else op.gt
+            self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
 
     def __init__(self, color: filter_color = filter_color.WHITE,
                  low_level: int = None, high_level: int = None,
@@ -319,29 +331,6 @@ class fAbcRange(abcFilter):
         assert type(value) == bool
         self._right_margin = value
         self._compile()
-
-    def _compile(self):
-        """
-        for WHITE filter:
-            self.low_level > x > self.hight_level
-                for self.left_margin = self.right_margin = True
-            self.low_level >= x >= self.hight_level
-
-        for BLACK filter:
-            self.low_level < x OR x > self.hight_level
-                for self.left_margin = self.right_margin = True
-            self.low_level <= x OR x >= self.hight_level
-        :return:
-        """
-        if self.color == filter_color.WHITE:
-            opl = op.ge if self.left_margin else op.gt
-            opr = op.le if self.right_margin else op.lt
-            self._check_func = lambda x: opl(x, self.low_level) & opr(x, self.hight_level)
-        else:
-            opl = op.le if self.left_margin else op.lt
-            opr = op.ge if self.right_margin else op.gt
-            self._check_func = lambda x: (opl(x, self.low_level) | opr(x, self.hight_level))
-
 
 # =================== file size filters (range, in bytes) =============================
 class filterFileSize(fAbcRange):
@@ -400,15 +389,15 @@ class filterFileDateRange(fAbcRange):
 
     def check(self, item) -> bool:
         st = os.stat(item)
-        x = dt.datetime.fromtimestamp(st.st_mtime).date()
+        x = dt.datetime.fromtimestamp(st.st_mtime)
         return self._check_func(x)
 
     def s_check(self, item) -> bool:
         return self._check_func(item['change_date'])
 
     def __init__(self, color: filter_color = filter_color.WHITE,
-                 low_date=dt.date(year=1970, month=1, day=1),
-                 high_date=dt.datetime.now().date(),
+                 low_date=dt.datetime(year=1970, month=1, day=1),
+                 high_date=dt.datetime.now(),
                  left_margin=True, right_margin=True):
         assert isinstance(low_date, dt.date) or isinstance(low_date, dt.datetime)
         assert isinstance(high_date, dt.date) or isinstance(low_date, dt.datetime)
@@ -445,7 +434,8 @@ class filterFileDateRange(fAbcRange):
 
     @property
     def rule(self):
-        return {'low_date': self.low_date.strftime('%Y-%m-%d'), 'hight_date': self.hight_date.strftime('%Y-%m-%d'),
+        return {'low_date': self.low_date.strftime('%Y-%m-%d %H:%M'),
+                'hight_date': self.hight_date.strftime('%Y-%m-%d %H:%M'),
                 'left_margin': self.left_margin, 'right_margin': self.right_margin}
 
 
@@ -454,15 +444,7 @@ class filterFileDateExact(filterFileDateRange):
     filter of file change date exactly
     """
     def _compile(self):
-        #     """
-        #     for WHITE filter:
-        #         file change date == x
-        #
-        #     for BLACK filter:
-        #         file change date != x
-        #     """
-
-        if self.color == filter_color.WHITE:
+        if self.color in [filter_color.WHITE, filter_color.RED]:
             self._check_func = lambda x: x == self.hight_date
         else:
             self._check_func = lambda x: x != self.hight_date
@@ -505,7 +487,7 @@ class filterArchAttrib(abcFilter):
         self._compile()
 
     def _compile(self):
-        self._check_func = op.eq if self.color == filter_color.WHITE else op.ne
+        self._check_func = op.eq if self.color in [filter_color.WHITE, filter_color.RED] else op.ne
 
     def check(self, strPath: str) -> bool:
         xr = subprocess.check_output(['attrib', strPath])
@@ -516,7 +498,8 @@ class filterArchAttrib(abcFilter):
 
     def s_check(self, item):
         _d = {filter_color.WHITE: item['A-attr'],
-              filter_color.BLACK: not item['A-attr']}
+              filter_color.BLACK: not item['A-attr'],
+              filter_color.RED: item['A-attr']}
         return _d[self.color]
 
     @property
