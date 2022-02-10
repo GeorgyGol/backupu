@@ -84,7 +84,7 @@ class xInfoZ(abcActionOnSource):
         f_filtered = self._ffiles
         f_unf = self._files
 
-        return pd.DataFrame(f_filtered)
+        return f_filtered
 
     def __init__(self, source_base_dir: str, log_level=logging.DEBUG, scan_filters: list = list()) -> None:
         super().__init__(source_base_dir=source_base_dir, log_level=log_level, scan_filters=scan_filters)
@@ -102,7 +102,7 @@ if __name__ == '__main__':
                ]
     xi = xInfoZ(source_base_dir=smb_src, log_level=logging.INFO,
                 scan_filters=filters)
-    pdf = xi.run()
+    pdf = pd.DataFrame(xi.run())
     print('=' * 100)
     for i, v in pdf.iterrows():
         print(v['name'], v['ext'])
