@@ -49,7 +49,7 @@
 
     Childs:
     class xCopyZ - do copy files work
-
+    class xBackupZ - do full or incremental backup work
 """
 import logging
 import sys
@@ -125,6 +125,10 @@ class abcActionZ(ABC):
     @property
     def destination_base(self):
         return self._dest_base
+
+    @property
+    def destination_folder(self):
+        return self._dest_folder
 
     def _setup_logger(self, log_file_name=''):
         """
@@ -320,12 +324,42 @@ class abcActionZ(ABC):
                     print('+', end='', flush=True)
         print('')
 
+    def close_log(self):
+        hdl = self._log.handlers[:]
+        for h in hdl:
+            h.close()
+            self._log.removeHandler(h)
+
     @abstractmethod
     def run(self, do_action=True, do_create_dest_tree=True):
         pass
 
 class xCopyZ(abcActionZ):
-    """class for scanning source dir and copy filtered files into destination dir"""
+    """
+    class for scanning source dir and copy filtered files into destination dir
+    Example:
+        sourceFolder = str(<valid path to existing source folder with subfolder and files>)
+        destFilderBase = str(<valid path to existing destination folder - base for copied files and folders>)
+        destFilder4Copy = str(<name for working sub-dir in destFilderBase - will be created>)
+
+        filters = [filterFileExt(color=filter_color.WHITE, rule=r'xls'),
+                   filterFileExt(color=filter_color.WHITE, rule=r'py'),
+                   filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+                   filterFileExt(color=filter_color.BLACK, rule=r'ipynb') # varoius file and path filters
+
+        cw = xCopyZ(source_base_dir=sourceFolder, log_level=logging.INFO,
+                    destination_base_dir=destFilderBase, destination_subdir=destFilder4Copy,
+                    scan_filters=filters,
+                    new_folder_rule=incRule())#, archive_format='zip')
+
+        cw.run()
+
+        Result : inside destFilderBase will be create folder destFilder4Copy; if such folder already ezist will be
+                 applyed rule new_folder_rule (created new folder with name based on destFilder4Copy);
+                 files from the source folder that have passed through the filtering will be copied to this folder
+                 copying errors will be written to a log file located in the same folder;
+                 if param archive_format='zip' is used source files will be zipped in file with name destFilder4Copy.zip
+    """
 
     def __init__(self, source_base_dir: str, destination_base_dir: str, destination_subdir: str = '', prefix: str = '',
                  delimiter: str = '_', log_level=logging.DEBUG, scan_filters: list = list(),
@@ -366,7 +400,6 @@ class xCopyZ(abcActionZ):
 
         self._log.info(' ' * 100)
 
-
 class backup_types(Enum):
     FULL = 'FULL BACKUP'
     INC = 'INCREMENTAL BACKUP'
@@ -376,9 +409,36 @@ class xBackupZ(xCopyZ):
     class for BACKUP work
     work like COPY, by now have two regime of work:
       FULL BACKUP - copy all selected files to destination; switch off a-attrib for copied files (if use_A_atrib = True)
-      INC BACKUP - add to given filters list filter a-attrib of file is switched on (if use_A_atrib = True) or find in desination directory on second-level sub-dirs in destination all *BACKUP*.log files, get last date from this list and add filter for date more, then this, to the given filters list. Then copy selected files to destination.
+      INC BACKUP - add to given filters list filter a-attrib of file is switched on (if use_A_atrib = True) or find
+      in desination directory on second-level sub-dirs in destination all *BACKUP*.log files, get last date from this
+      list and add filter for date more, then this, to the given filters list. Then copy selected files to destination.
 
-      For INC BACKUP a-attrib and date range for last date of log file filters color setas RED
+      For INC BACKUP a-attrib and date range for last date of log file filters color set as RED
+
+      Example:
+        sourceFolder = str(<valid path to existing source folder with subfolder and files>)
+        destFilderBase = str(<valid path to existing destination folder - base for copied files and folders>)
+        destFilder4BackUp = str(<name for working sub-dir in destFilderBase - will be created>)
+
+        filters = [filterFileExt(color=filter_color.WHITE, rule=r'xls'),
+                   filterFileExt(color=filter_color.WHITE, rule=r'py'),
+                   filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+                   filterFileExt(color=filter_color.BLACK, rule=r'ipynb') # varoius file and path filters
+
+        cw = xBackupZ(source_base_dir=sourceFolder, log_level=logging.INFO,
+                    destination_base_dir=destFilderBase, destination_subdir=destFilder4Copy,
+                    scan_filters=filters, backup_types = backup_types.FULL,
+                    new_folder_rule=incRule())#, archive_format='zip')
+
+        cw.run()
+
+        Result : inside destFilderBase will be create folder destFilder4BackUp; if such folder already ezist will be
+                 applyed rule new_folder_rule (created new folder with name based on destFilder4BackUp);
+                 files from the source folder that have passed through the filtering will be copied to this folder
+                 copying errors will be written to a log file located in the same folder;
+                 if param archive_format='zip' is used source files will be zipped in file with name destFilder4BackUp.zip
+                 If param use_A_atrib is set to True (default) after file copy archive file attribute will be
+                 switched off for all copied source files
     """
 
     def __init__(self, source_base_dir: str,
@@ -486,7 +546,6 @@ def copy():
 
     # print('.'*100)
 
-
 def backup():
     # filters = [filterFileExt(color=filter_color.WHITE, rule = r'xls'),]
 
@@ -512,9 +571,11 @@ def backup():
                ]
 
     sub_name = 'BACKUP_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
-    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    # smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    smb_src = r'U:\Golyshev'
+    dst_fld = r'D:\ttt'
     cw = xBackupZ(source_base_dir=smb_src, log_level=logging.INFO, backup_type=backup_types.INC,
-                  destination_base_dir=r'/home/egor/T', destination_subdir=sub_name, scan_filters=filters,
+                  destination_base_dir=dst_fld, destination_subdir=sub_name, scan_filters=filters,
                   prefix='INC',
                   new_folder_rule=incRule(), archive_format='zip')
 
@@ -522,10 +583,6 @@ def backup():
     cw.run()
 
     # print('.'*100)
-
-def main():
-    pass
-
 
 if __name__ == "__main__":
     # copy()
