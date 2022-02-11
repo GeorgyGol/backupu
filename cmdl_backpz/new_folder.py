@@ -33,6 +33,13 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 
+def msec_add2name(strMain):
+    dtx = dt.datetime.now()
+    ep = dt.datetime(1970, 1, 1, 0, 0, 0)
+    msec_epo = int((dtx - ep).total_seconds() * 1e3)
+    new_name = '{name}_{num}'.format(name=strMain, num=msec_epo)
+    return new_name
+
 class abcNewFolderExistsRule(ABC):
     """
     base class for resolve new-folder-already-exists situation. New folder name construct from given by append to it
