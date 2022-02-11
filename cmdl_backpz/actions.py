@@ -56,9 +56,23 @@ import sys
 import zipfile
 from shutil import copy2
 
+from google.cloud import storage
+
 from cmdl_backpz.new_folder import *
 from cmdl_backpz.scan import *
 
+
+def gc_storage_connect(path_json_key):
+    client = storage.Client.from_service_account_json(path_json_key)
+    # buckets = client.list_buckets()
+    #
+    # for bucket in buckets:
+    #     print(bucket.name)
+    return client
+
+
+def dc_storage_bucket(client, bucket_name):
+    return client.get_bucket(bucket_name)
 
 def set_archive_sttrib(file_path, AAtrib_ON=False):
     """
@@ -73,10 +87,8 @@ def set_archive_sttrib(file_path, AAtrib_ON=False):
     else:
         return subprocess.check_output(['attrib', '-a', file_path])
 
-
 def file_size2mb(size_in_bytes: int) -> int:
-    return int(size_in_bytes / (1024 ** 2))
-
+    return round(size_in_bytes / (1024 ** 2), 3)
 
 class abcActionZ(ABC):
 
@@ -84,7 +96,7 @@ class abcActionZ(ABC):
                  destination_subdir: str = '', prefix: str = '', delimiter: str = '_',
                  log_level=logging.DEBUG, scan_filters: list = list(),
                  new_folder_rule: abcNewFolderExistsRule = errorRule(),
-                 archive_format:str = '') -> None:
+                 archive_format: str = '', log_file_name='', set_up_logger_on_init=True) -> None:
         """
         :param source_base_dir: str or pathlike - root of source directory subtree
         :param destination_base_dir: str of pathlike - root of destination subtree
@@ -114,8 +126,10 @@ class abcActionZ(ABC):
         self._dest_folder = self._new_fold.folder
 
         self._log_level = log_level
-        self._setup_logger()
+        if set_up_logger_on_init:
+            self._setup_logger(log_file_name=log_file_name)
         self._post_work_action = lambda x: x
+        self._copy_action = copy2
         super().__init__()
 
     @property
@@ -133,30 +147,40 @@ class abcActionZ(ABC):
     def _setup_logger(self, log_file_name=''):
         """
         setup logger object
+
+        :param log_file_name: str - path to log-file; if is None - with without loggin to file, if == '' - create log-file inside destination folder (or destination base folder if copy to zip-file); if == valid path to file - log to this file
+
         create logger object with 2 handlers: stream (with given mesage level) and file (with logger.INFO level)
         if result action work with archive file - create log file with name destination archive file and '.log' extension (instead of '.zip' extension); if destination is dir - create log-file with name of action in destination root dir
         :return: log-object
         """
-        filename = log_file_name or self._work_name
-
-        if self._archive_format:
-            os.makedirs(str(self.destination_base), exist_ok=True)
-
-            logfile = str(Path(self.destination_base).joinpath('{0}({1}).log'.format(filename, self._dest_folder.stem)))
-        else:
-            # if archive = None make destination sub-dir (for this work) in destination base dir
-            os.makedirs(str(self._dest_folder), exist_ok=True)
-            logfile = str(self._dest_folder.joinpath('{}.log'.format(filename)))
-
         self._log = logging.getLogger('console')
         self._log.setLevel(self._log_level)
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(self._log_level)
-
-        fl = logging.FileHandler(logfile, mode='a')
-        fl.setLevel(logging.INFO)
         self._log.addHandler(ch)
-        self._log.addHandler(fl)
+
+        if log_file_name is not None:
+            if log_file_name == '':
+                filename = self._work_name
+
+                if self._archive_format:
+                    os.makedirs(str(self.destination_base), exist_ok=True)
+
+                    logfile = str(
+                        Path(self.destination_base).joinpath('{0}({1}).log'.format(filename, self._dest_folder.stem)))
+                else:
+                    # if archive = None make destination sub-dir (for this work) in destination base dir
+                    os.makedirs(str(self._dest_folder), exist_ok=True)
+                    logfile = str(self._dest_folder.joinpath('{}.log'.format(filename)))
+            else:
+                logfile = log_file_name
+
+            fl = logging.FileHandler(logfile, mode='a')
+            fl.setLevel(logging.INFO)
+            self._log.addHandler(fl)
+        else:
+            logfile = 'NONE'
 
         if self._archive_format:
             self._log.info(
@@ -249,7 +273,8 @@ class abcActionZ(ABC):
         for i, nf in enumerate(src_dst):
             try:
                 if do_copy:
-                    copy2(nf[0], nf[1])
+                    # copy2(nf[0], nf[1])
+                    self._copy_action(nf[0], nf[1])
                     self._post_work_action(nf[0])
                 else:
                     with open(nf[0], 'rb') as flt:
@@ -293,7 +318,7 @@ class abcActionZ(ABC):
         step = int(cnt_files / 100) or 1
         _logDEBMess = '{f_num} from {f_cnt}: {src} --> {dst}'
         cnt_error = 0
-
+        # TODO: russian simbols in archive in windows
         with zipfile.ZipFile(str(self._dest_folder), 'w') as myzip:
             for i, nf in enumerate(src_dst):
                 try:
@@ -331,7 +356,7 @@ class abcActionZ(ABC):
             self._log.removeHandler(h)
 
     @abstractmethod
-    def run(self, do_action=True, do_create_dest_tree=True):
+    def run(self, do_action=True, do_create_dest_tree=True) -> list:
         pass
 
 class xCopyZ(abcActionZ):
@@ -363,19 +388,19 @@ class xCopyZ(abcActionZ):
 
     def __init__(self, source_base_dir: str, destination_base_dir: str, destination_subdir: str = '', prefix: str = '',
                  delimiter: str = '_', log_level=logging.DEBUG, scan_filters: list = list(),
-                 new_folder_rule: abcNewFolderExistsRule = exsistOKRule(), archive_format: str = '') -> None:
+                 new_folder_rule: abcNewFolderExistsRule = exsistOKRule(), archive_format: str = '',
+                 set_up_logger_on_init=True) -> None:
 
         self._work_name = 'COPY'
 
         super().__init__(source_base_dir=source_base_dir, destination_base_dir=destination_base_dir,
                          destination_subdir=destination_subdir, prefix=prefix,
                          delimiter=delimiter, log_level=log_level,
-                         scan_filters=scan_filters, new_folder_rule=new_folder_rule, archive_format=archive_format)
+                         scan_filters=scan_filters, new_folder_rule=new_folder_rule,
+                         archive_format=archive_format, set_up_logger_on_init=set_up_logger_on_init)
 
     def run(self, do_copy=True, do_create_tree=True):
-
         work_pair = self._do_scan()
-
         self._log.info('-' * 100)
         if self._archive_format:
             self._log.info('START {0} ({1}):'.format(self._work_name, self._archive_format))
@@ -385,7 +410,7 @@ class xCopyZ(abcActionZ):
         if len(work_pair) == 0:
             self._log.warning('nothing to {} - exit'.format(self._work_name))
             self._log.info(' ' * 100)
-            return
+            return list()
 
         if self._archive_format:
             self._do_zip(work_pair)
@@ -399,6 +424,89 @@ class xCopyZ(abcActionZ):
             self._log.info('{} DONE'.format(self._work_name))
 
         self._log.info(' ' * 100)
+        return work_pair
+
+
+class xCopyGCS(xCopyZ):
+    """
+    copy files to google cloud storage bucket
+    Example:
+
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb')] # any filters
+
+
+    folder_name = 'CPYTST_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
+    source_path = '<some valid exists path>'
+
+    path_key = <path to json google key file>
+    client = gc_storage_connect(path_key)
+    bsk = dc_storage_bucket(client, '<bucket name>')
+
+    cw = xCopyGCS(source_base_dir=source_path, log_level=logging.INFO,
+                  google_bucket=bsk, log_file_path=Path('../LOG/gcs_log.log'),
+                  google_cloud_bucket_folder=folder_name, scan_filters=filters)
+
+    cw.run()
+    """
+
+    def __init__(self, source_base_dir: str = '',
+                 google_bucket: storage.Bucket = None, google_cloud_bucket_folder: str = '',
+                 log_level=logging.DEBUG, scan_filters: list = list(),
+                 log_file_path: str = '', set_up_logger_on_init=True) -> None:
+        """
+        :param source_base_dir: str or pathlike - path to source dir
+        :param google_bucket: google.storage.Bucket - google bucket object
+        :param google_cloud_bucket_folder: str - folder in given bucket
+        :param log_level: logging level (in log-file log_level always = logging.INFO)
+        :param scan_filters: list of abcFilter instances - filter for select source files
+        :param log_file_path: path to log-file. In this class there is no destination folder, and log-file don't create automatcaly, so you must set path to it
+        """
+
+        assert Path(source_base_dir).exists(), 'source dir must exists'
+        assert google_bucket is not None
+        assert isinstance(google_bucket, storage.Bucket)
+
+        self._work_name = 'COPY to GOOGLE CLOUD STORAGE, (bucket - "{}")'.format(google_bucket.name)
+        self._archive_format = ''
+
+        self._gcs_bucket = google_bucket
+        self._source = source_base_dir
+        self._dest_base = google_bucket.name
+
+        self._scan = xScan(start_path=self.source_folder)
+        self._scan.set_filters(*scan_filters)
+
+        self._dest_folder = google_cloud_bucket_folder
+
+        self._log_level = log_level
+        if set_up_logger_on_init:
+            self._setup_logger(log_file_name=log_file_path)
+        self._post_work_action = lambda x: x
+        self._copy_action = self._upload_blob
+
+    def _create_dest_tree_folder(self, files: list, do_create_tree: bool = True):
+        """
+        destination - goggle cloud storage bucket, so do nothing - pass
+        :param files:
+        :param do_create_tree:
+        :return:
+        """
+        pass
+
+    def _upload_blob(self, src, dst):
+        """
+        this function wall be run in self.run method (default is shutils.copy2 func)
+        :param src: str - path to source file
+        :param dst: str - path for bucket folder desination
+        :return: None
+        """
+        blob = self._gcs_bucket.blob(dst)
+        blob.upload_from_filename(src)
+
+    def run(self, do_copy=True):
+        return super().run(do_copy=do_copy, do_create_tree=False)
 
 class backup_types(Enum):
     FULL = 'FULL BACKUP'
@@ -441,11 +549,11 @@ class xBackupZ(xCopyZ):
                  switched off for all copied source files
     """
 
-    def __init__(self, source_base_dir: str,
-                 destination_base_dir: str, destination_subdir: str = '', prefix: str = '', delimiter: str = '_',
-                 log_level=logging.DEBUG, scan_filters: list = list(), backup_type: backup_types = backup_types.FULL,
-                 use_A_atrib: bool = True, new_folder_rule: abcNewFolderExistsRule = incRule(),
-                 archive_format: str = '') -> None:
+    def __init__(self, source_base_dir: str, destination_base_dir: str, destination_subdir: str = '', prefix: str = '',
+                 delimiter: str = '_', log_level=logging.DEBUG, scan_filters: list = list(),
+                 new_folder_rule: abcNewFolderExistsRule = incRule(), archive_format: str = '',
+                 backup_type: backup_types = backup_types.FULL,
+                 use_A_atrib: bool = True) -> None:
         """
 
         :param source_base_dir: str or pathlike - root of source directory subtree
@@ -460,22 +568,14 @@ class xBackupZ(xCopyZ):
         :param backup_type: backup_types - define Full or Incremental backup
         :param use_A_atrib: bool - True = try to use archive attribute of file
         """
-        assert Path(source_base_dir).exists(), 'source dir must exists'
-        assert Path(destination_base_dir).exists(), 'destination base dir must exists'
+
+        super().__init__(source_base_dir=source_base_dir, destination_base_dir=destination_base_dir,
+                         destination_subdir=destination_subdir, prefix=prefix, delimiter=delimiter,
+                         log_level=log_level, scan_filters=scan_filters, new_folder_rule=new_folder_rule,
+                         archive_format=archive_format, set_up_logger_on_init=False)
 
         self._work_name = backup_type.value
         self._work_type = backup_type
-
-        self._source = source_base_dir
-        self._dest_base = destination_base_dir
-
-        self._scan = xScan(start_path=self.source_folder)
-
-        self._archive_format = archive_format
-        self._new_fold = newFolder(strBaseFolder=self.destination_base,
-                                   sub_name=destination_subdir, prefix=prefix, delimiter=delimiter,
-                                   exsist_rule=new_folder_rule, archive_format=archive_format)
-        self._dest_folder = self._new_fold.folder
 
         self._use_A_atrib = (platform.system() == 'Windows') and use_A_atrib
 
@@ -484,16 +584,12 @@ class xBackupZ(xCopyZ):
             pass
         elif self._work_type == backup_types.INC:
             if self._use_A_atrib:
-                scan_filters.append(filterArchAttrib(color=filter_color.RED))
+                self._scan.filters.append(filterArchAttrib(color=filter_color.RED))
             else:
-                scan_filters.append(filterFileDateRange(color=filter_color.RED,
-                                                        low_date=self.find_last_backup_date()))
+                self._scan.filters.append(filterFileDateRange(color=filter_color.RED,
+                                                              low_date=self.find_last_backup_date()))
 
-        self._scan.set_filters(*scan_filters)
-
-        self._log_level = log_level
         self._setup_logger()
-
         if self._use_A_atrib:
             self._post_work_action = set_archive_sttrib
         else:
@@ -510,14 +606,93 @@ class xBackupZ(xCopyZ):
         lst = list(Path(self.destination_base).glob('*/*BACKUP*.log'))
         lst += list(Path(self.destination_base).glob('*BACKUP*.log'))
         f_info = [file_info(str(f)) for f in lst]
-        # for f in f_info:
-        #     print(f['path'], f['change_date'])
         try:
             return max([f['change_date'] for f in f_info])
         except ValueError:
             return dt.datetime(day=1, month=1, year=1970)
-        # for l in f_info:
-        #     print(l)
+
+
+class xBackupGCS(xCopyGCS):
+    """
+    backup selected source files to google cloud storage bucket
+    create log file with name: backup type (FULL or INCREMENTAL) + name given by param log_file_path in folder, given by the same param. Date of last change this file will be use in INCREMENTAL backup work
+
+    Class do two types of backup:
+      full - select all source files that match the given filters; copy its to folder in given bucket; avter coping trying switch off arhive attribute of source files
+      incremental - add RED filter to given filters list: if use_A_atrib = True and OS = Windows add filterArchAttrib, else finds the latest date of change log-file and use in last low_level for filterFileDateRange filter. So backup will be done only for source files, older then this date, or having a-atribute switchin on
+
+    Connection to google cloud storage executed outside the class
+    Example:
+        smb_src = <path to source files>
+
+        path_key = <path to json google key file>
+        client = gc_storage_connect(path_key)
+        bsk = dc_storage_bucket(client, '<bucket name>')
+        gcs_folder = msec_add2name('INC_BACKUP')
+        log_file = <path to log-file (parent dir must exists)>
+
+        cw = xBackupGCS(source_base_dir=smb_src, log_level=logging.INFO,
+                  backup_type=backup_types.INC,
+                  google_bucket=bsk, log_file_path=log_file,
+                  google_cloud_bucket_folder=gcs_folder,
+                  scan_filters=filters)
+
+        cw.run()
+
+    """
+
+    def __init__(self, source_base_dir: str = '', google_bucket: storage.Bucket = None,
+                 google_cloud_bucket_folder: str = '', log_level=logging.DEBUG, scan_filters: list = list(),
+                 log_file_path: str = '', backup_type: backup_types = backup_types.FULL,
+                 use_A_atrib: bool = True) -> None:
+        assert log_file_path != '', 'must set path to log_file'
+
+        super().__init__(source_base_dir=source_base_dir, google_bucket=google_bucket,
+                         google_cloud_bucket_folder=google_cloud_bucket_folder, log_level=log_level,
+                         scan_filters=scan_filters, log_file_path=log_file_path, set_up_logger_on_init=False)
+
+        self._work_name = backup_type.value
+        self._work_type = backup_type
+        lfn = '{} {}'.format(self._work_name, Path(log_file_path).name)
+
+        self._log_file = str(Path(log_file_path).parent.joinpath(lfn))
+
+        self._use_A_atrib = (platform.system() == 'Windows') and use_A_atrib
+
+        if self._work_type == backup_types.FULL:
+            # full backup copy all selected files and, if OS Windows and use a-atrib, switch archive file attrib off
+            pass
+        elif self._work_type == backup_types.INC:
+            if self._use_A_atrib:
+                self._scan.filters.append(filterArchAttrib(color=filter_color.RED))
+            else:
+                self._scan.filters.append(filterFileDateRange(color=filter_color.RED,
+                                                              low_date=self.find_last_backup_date()))
+
+        self._setup_logger(log_file_name=self._log_file)
+        if self._use_A_atrib:
+            self._post_work_action = set_archive_sttrib
+        else:
+            self._post_work_action = lambda x: x
+        self._log.info('!' * 100)
+        self._log.info('use Archive file attribute : {}'.format(self._use_A_atrib))
+        self._log.info('!' * 100)
+
+    def find_last_backup_date(self):
+        """
+        for INCREMENTAL backup: find all *BACKUP*.log' files in directory, given by log_file_path init param,
+        select last date (with time), return it for use in date range filter as low level date
+        :return: date of last written backup log file
+        """
+
+        print(Path(self._log_file).parent)
+        # lst = list(Path(self._log_file).parent.glob('*/*BACKUP*.log'))
+        lst = list(Path(self._log_file).parent.glob('*BACKUP*.log'))
+        f_info = [file_info(str(f)) for f in lst]
+        try:
+            return max([f['change_date'] for f in f_info])
+        except ValueError:
+            return dt.datetime(day=1, month=1, year=1970)
 
 def copy():
     # filters = [filterFileExt(color=filter_color.WHITE, rule = r'xls'),]
@@ -571,9 +746,11 @@ def backup():
                ]
 
     sub_name = 'BACKUP_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
-    # smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
-    smb_src = r'U:\Golyshev'
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    # smb_src = r'U:\Golyshev'
     dst_fld = r'D:\ttt'
+    dst_fld = r'/home/egor/T'
+
     cw = xBackupZ(source_base_dir=smb_src, log_level=logging.INFO, backup_type=backup_types.INC,
                   destination_base_dir=dst_fld, destination_subdir=sub_name, scan_filters=filters,
                   prefix='INC',
@@ -584,9 +761,64 @@ def backup():
 
     # print('.'*100)
 
+
+def copy_gcs():
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+    # filters = [filterFileExt(color=filter_color.WHITE, rule=r'py'),
+    #            filterFileExt(color=filter_color.BLACK, rule=r'py')]
+    # filters= list()
+
+    sub_name = 'CPYTST_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+
+    path_key = Path.home().joinpath('klu').joinpath('testgcds-340913-f781d2910762.json')
+    client = gc_storage_connect(path_key)
+    bsk = dc_storage_bucket(client, 'debug-backupz')
+
+    # bsk = dc_storage_bucket(client, 'debug-backupz')
+
+    cw = xCopyGCS(source_base_dir=smb_src, log_level=logging.INFO,
+                  google_bucket=bsk, log_file_path=Path('../LOG/gcs_log.log'),
+                  google_cloud_bucket_folder='TEST1',
+                  scan_filters=filters)
+
+    cw.run()
+
+
+def backup_gcs():
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'txt'),
+               filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+    # filters = [filterFileExt(color=filter_color.WHITE, rule=r'py'),
+    #            filterFileExt(color=filter_color.BLACK, rule=r'py')]
+    # filters= list()
+
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+
+    path_key = Path.home().joinpath('klu').joinpath('testgcds-340913-f781d2910762.json')
+    client = gc_storage_connect(path_key)
+    bsk = dc_storage_bucket(client, 'debug-backupz')
+    gcs_folder = msec_add2name('TEST')
+    log_file = Path('../LOG/{}.log'.format(msec_add2name('test')))
+
+    cw = xBackupGCS(source_base_dir=smb_src, log_level=logging.INFO,
+                    backup_type=backup_types.INC,
+                    google_bucket=bsk, log_file_path=log_file,
+                    google_cloud_bucket_folder=gcs_folder,
+                    scan_filters=filters)
+
+    pr = cw.run(do_copy=True)
+    # for p in pr:
+    #     print(p[0], ' --> ', p[1])
+
 if __name__ == "__main__":
-    # copy()
-    backup()
+    # copy_gcs()
+    copy()
+    # backup()
+    # backup_gcs()
     # print(os.listdir('/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'))
     # print(backup_type.FULL.value)
     print('ALL DONE')
