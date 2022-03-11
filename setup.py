@@ -1,18 +1,19 @@
 #from distutils.core import setup
-from setuptools import setup, find_packages
-import cmdl_backpz
-import os
+from setuptools import setup
+
+import cmdl_backupu
+
 
 # Get the long description from the README file
 def read(fname):
     return open(fname).read()
 
 setup(
-    name='backupz',
-    version=cmdl_backpz.__version__,
-    packages=['cmdl_backpz',],
-    scripts=['cmdl_backpz/backupz.py',],
-    entry_points={'console_scripts': ['backupz = cmdl_backpz.backupz:main']},
+    name='backupu',
+    version=cmdl_backupu.__version__,
+    packages=['cmdl_backupu', ],
+    scripts=['cmdl_backupu/backupu.py', ],
+    entry_points={'console_scripts': ['backupu = cmdl_backupu.backupu:main']},
     #long_description=read('README.md'),
     #long_description_content_type="text/markdown",
     url='',
