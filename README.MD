@@ -1,4 +1,4 @@
-# Backupz
+# BackupU
 Backup and copying files while maintaining the directory structure, with starting and setting parameters from the command 
 line (for use in assigned tasks and scripts).
 
@@ -24,27 +24,27 @@ only in Python codes) uses pandas 22 (and above).
 **Used modules:**
 _argparse, logging, os, re, datetime, subprocess, zipfile, abc, shutil, sys,_
 
-**Operating system:** MS Windows (the file attribute is "archived").
+**Operating system:** MS Windows (the file attribute is "archived")? Linux.
 
 ## Installation:
 
 ```
-pip install git + https: //github.com/GeorgyGol/backupz.git
+pip install git + https: //github.com/GeorgyGol/backupu.git
 ```
 
 ## Usage
 After installation, you can use the backupz command in scripts and / or command line:
 
 ```
- > backupz --version
-backupz.py 0.2.0
+ > backupu --version
+backupu.py 0.2.0
 ```
 
 ```
- > backupz -h
+ > backupu -h
  
 
-usage: backupz.py [-h] [/n NAME] /s SOURCE /d DESTINATION [/z]
+usage: backupu.py [-h] [/n NAME] /s SOURCE /d DESTINATION [/z]
                   [/w { b_full, b_inc, b_diff, copy}]
                   [/l { info, debug, error, none, warn, critical}]
                   [-e EXCLUDE_EXTENSIONS] [+e ONLY_EXTENSIONS]
@@ -88,7 +88,7 @@ for work parameters from file use: backupz @<filename>
 ```
 
 ```
- > backupz /s "c:\test" /d "d:\test" /n "Full TEST backup" -e "tmp, xml, csv, lnk" -f "@Recycle" -n "\~\$" /w "b_full"
+ > backupu /s "c:\test" /d "d:\test" /n "Full TEST backup" -e "tmp, xml, csv, lnk" -f "@Recycle" -n "\~\$" /w "b_full"
 ```
  
  performs a full backup (does not take into account the archive 
@@ -102,7 +102,7 @@ for work parameters from file use: backupz @<filename>
  written to it with the same folder structure (next line do the same)
  
 ```
- > backupz @params.txt
+ > backupu @params.txt
 ```
 
 parameters are read from a file `params.txt`. 
