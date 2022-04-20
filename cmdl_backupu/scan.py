@@ -15,6 +15,7 @@ import platform
 
 from cmdl_backupu.filters import *
 
+FILE_INFO = ['path', 'change_date', 'create_date', 'size', 'mode', 'ext', 'A-attr', 'name']
 
 def file_info(item: str) -> dict:
     """
@@ -34,10 +35,10 @@ def file_info(item: str) -> dict:
     except IndexError:
         isA = False
 
-    return {'path': item, 'change_date': dt.datetime.fromtimestamp(st.st_mtime),
-            'create_date': dt.datetime.fromtimestamp(st.st_ctime),
-            'size': st.st_size, 'mode': st.st_mode, 'ext': item.split('.')[-1], 'A-attr': isA,
-            'name': Path(item).stem}
+    return {FILE_INFO[0]: item, FILE_INFO[1]: dt.datetime.fromtimestamp(st.st_mtime),
+            FILE_INFO[2]: dt.datetime.fromtimestamp(st.st_ctime),
+            FILE_INFO[3]: st.st_size, FILE_INFO[4]: st.st_mode, FILE_INFO[5]: item.split('.')[-1], FILE_INFO[6]: isA,
+            FILE_INFO[7]: Path(item).stem}
 
 
 class xScan():

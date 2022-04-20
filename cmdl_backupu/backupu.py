@@ -3,46 +3,45 @@ Entry point for BACKUP-commend
 run from batch, do various backup works
 """
 
-import logging
-import re
+import datetime as dt
 
-from cmdl_backupu import actions, arg_parse
+from cmdl_backupu import actions, arg_parse, new_folder
 
 
 def main():
-    def make_param_list(strParams):
-        lst = list(map(str.strip, filter(None, re.split('[;,]', strParams))))
-        return lst
-
-    log_levels = {'critical': logging.CRITICAL, 'error': logging.ERROR, 'warn': logging.WARNING, 'info': logging.INFO,
-                  'debug': logging.DEBUG, 'none': None}
-
     xpars = arg_parse.Params(work_type=actions.work_types.BACKUP)
-    # args=parse_args()
 
-    str_comm = ['~s', '/home/egor/git/jupyter/housing_model',
-                '~d', '/home/egor/T', '~l', 'error', '~n', 'test work',
-                '-e', 'pyc,xls?,py.*', '+e', 'py;sqlite? txt',
-                '-f', r'\\PY\\', '+f', r'py\\',
-                '-n', '_;~', '+n', 'test',
-                '+d', '2020/01/01-2021/12/31']
+    # str_comm = ['~s', '/home/egor/git/jupyter/housing_model',
+    #             '~w', 'inc',
+    #             '~d', '/home/egor/T',
+    #             '~n', 'test work',
+    #             '-e', 'pyc,xls?,py.*',
+    #             '+e', 'py;sqlite? txt',
+    #             '-f', r'\\PY\\',
+    #             '+f', r'py\\',
+    #             '-n', '_;~',
+    #             '+n', 'test',
+    #             '-a',
+    #             '~l', 'info',
+    #             '+d', '2020/01/01-2021/12/31']
 
-    args = xpars.parse_args(args=str_comm)
+    # for debug: get params from string
+    # args = xpars.parse_args(args=str_comm)
 
-    for arg in vars(args):
-        print(arg, getattr(args, arg))
-
-    print(xpars.zip)
-    print(xpars.source)
-    print(xpars.destination)
-    print(xpars.log_level)
-    print(xpars.name)
-    print(xpars.backup_type)
-    print(xpars.work_type)
-    for f in xpars.filters:
-        print(f)
-
+    # get params from command string
+    args = xpars.parse_args()
+    xBU = actions.xBackupU(source_base_dir=xpars.source,
+                           destination_base_dir=xpars.destination,
+                           destination_subdir='BACKUP_{}'.format(dt.datetime.now().strftime('%d_%m_%Y')),
+                           log_level=xpars.log_level,
+                           backup_type=xpars.backup_type,
+                           scan_filters=xpars.filters,
+                           archive_format=xpars.zip,
+                           prefix=xpars.backup_type.name,
+                           use_A_atrib=xpars.a_attr,
+                           new_folder_rule=new_folder.incRule())
+    xBU.run()
 
 if __name__ == "__main__":
     main()
-    print('All done')
+    print('Backup4u done')
