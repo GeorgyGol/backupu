@@ -350,6 +350,47 @@ class abcActionU(ABC):
         pass
 
 
+class xInfoU(abcActionU):
+    """scan and print info about scanned files
+    all filters work
+    Class can be used for check params for COPY and BACKUP work"""
+
+    def __init__(self, source_base_dir: str,
+                 delimiter: str = ';', log_level=logging.DEBUG, scan_filters: list = list(),
+                 new_folder_rule: abcNewFolderExistsRule = exsistOKRule(),
+                 log_file_name='', set_up_logger_on_init=True) -> None:
+        self._work_name = 'INFO'
+        super().__init__(source_base_dir=source_base_dir, destination_base_dir=source_base_dir,
+                         log_level=log_level, scan_filters=scan_filters,
+                         new_folder_rule=new_folder_rule, delimiter=delimiter,
+                         log_file_name=log_file_name, set_up_logger_on_init=set_up_logger_on_init)
+
+    def run(self, do_action=True, do_create_dest_tree=True) -> list:
+        self._do_scan()
+        return self._create_csv_list()
+
+    def _create_csv_list(self):
+        _files = self._scan.files(filtered=True)
+        _head = ['NUM', ] + FILE_INFO
+        lines = list()
+        lines.append(self._new_fold.delimiter.join(_head))
+
+        for i, v in enumerate(_files):
+            _lst = [str(i), v[FILE_INFO[0]], v[FILE_INFO[1]].strftime('%Y-%m-D %H:%M'),
+                    v[FILE_INFO[2]].strftime('%Y-%m-D %H:%M'), str(v[FILE_INFO[3]]),
+                    str(v[FILE_INFO[4]]), v[FILE_INFO[5]], str(v[FILE_INFO[6]]), v[FILE_INFO[7]]]
+
+            _res = self._new_fold.delimiter.join(_lst)
+
+            lines.append(_res)
+
+        return lines
+
+    def _do_scan(self) -> list:
+        self._scan.scan()
+        self._log.info('scan source done')
+
+
 class xCopyU(abcActionU):
     """
     class for scanning source dir and copy filtered files into destination dir
@@ -581,12 +622,13 @@ def backup():
                ]
 
     sub_name = 'BACKUP_{}'.format(dt.datetime.now().strftime('%d_%m_%Y'))
-    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
+    # smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'
     # smb_src = r'U:\Golyshev'
     dst_fld = r'D:\ttt'
+    src = '/home/egor/git/jupyter/housing_model'
     dst_fld = r'/home/egor/T'
 
-    cw = xBackupU(source_base_dir=smb_src, log_level=logging.INFO, backup_type=backup_types.INC,
+    cw = xBackupU(source_base_dir=src, log_level=logging.INFO, backup_type=backup_types.FULL,
                   destination_base_dir=dst_fld, destination_subdir=sub_name, scan_filters=filters,
                   prefix='INC',
                   new_folder_rule=incRule(), archive_format='zip')
@@ -597,10 +639,29 @@ def backup():
     # print('.'*100)
 
 
+def info():
+    filters = [filterFileExt(color=filter_color.WHITE, rule=r'txt\b'),
+               filterFileExt(color=filter_color.WHITE, rule=r'py'),
+               filterFileName(color=filter_color.WHITE, rule=r'Голышев'),
+               filterFileExt(color=filter_color.WHITE, rule=r'pdf'),
+               filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
+               filterFileExt(color=filter_color.BLACK, rule=r'ipynb'),
+               ]
+
+    src = '/home/egor/git/jupyter/housing_model'
+    dst_fld = r'/home/egor/T'
+
+    ci = xInfoU(source_base_dir=src, log_level=logging.INFO,
+                scan_filters=filters)
+    fls = ci.run()
+    for f in fls:
+        print(f)
+
 if __name__ == "__main__":
     # copy_gcs()
-    copy()
+    # copy()
     # backup()
+    info()
     # backup_gcs()
     # print(os.listdir('/run/user/1000/gvfs/smb-share:server=commd.local,share=personal/Golyshev'))
     # print(backup_type.FULL.value)

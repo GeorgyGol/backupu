@@ -4,7 +4,7 @@ import logging
 import re
 from pathlib import Path
 
-from cmdl_backupu import actions, filters, __version__
+from cmdl_backupu import actions, filters, __version__, new_folder
 
 
 class Params:
@@ -33,13 +33,20 @@ class Params:
             self._parser.add_argument('+z', '--zip', help='ZIP-Archive destination',
                                       required=False, action='store_true')
         else:
-            self._parser.add_argument('~d', '--destination', help='Path to csv-file name with files info',
+            self._parser.add_argument('~d', '--destination', help='Not used - for compability purpose',
                                       required=False)
 
         if work_type == actions.work_types.BACKUP:
             self._parser.add_argument('~w', '--work', help='backup full or inc',
                                       default='FULL',
-                                      choices=['FULL', ' INC'])
+                                      choices=['FULL', 'INC', 'full', 'inc'])
+            self._parser.add_argument('-a', '--not-archive', action='store_true',
+                                      help="""don't use file archive-attribute for backup - use date of last backup
+                                       insteed. Work only on Windows, on Linux always use files date""")
+        if work_type == actions.work_types.COPY:
+            self._parser.add_argument('~e', '--exist_desc', help='If destination alredy exists do...',
+                                      default='new',
+                                      choices=['new', 'overwrite', 'error'])
 
         self._parser.add_argument('~l', '--log_level', help='log with log-level or none', default='info',
                                   choices=['info', 'debug', 'error', 'none', 'warn', 'critical'])
@@ -79,6 +86,10 @@ class Params:
         return vars(self._args)['zip']
 
     @property
+    def a_attr(self):
+        return not vars(self._args)['not_archive']
+
+    @property
     def source(self):
         if Path(vars(self._args)['source']).exists():
             return vars(self._args)['source']
@@ -90,6 +101,11 @@ class Params:
         return vars(self._args)['destination']
 
     @property
+    def exist_destination(self):
+        ret = {'new': new_folder.incRule(), 'overwrite': new_folder.exsistOKRule(), 'error': new_folder.errorRule()}
+        return ret[vars(self._args)['exist_desc'].strip().lower()]
+
+    @property
     def name(self):
         return vars(self._args)['name']
 
@@ -97,13 +113,14 @@ class Params:
     def log_level(self):
         _ret = {'info': logging.INFO, 'debug': logging.DEBUG, 'error': logging.ERROR,
                 'critical': logging.CRITICAL, 'none': logging.NOTSET, 'warn': logging.WARNING}
-        return _ret[vars(self._args)['log_level'].lower()]
+        _x = _ret[vars(self._args)['log_level'].lower()]
+        return _x
 
     @property
     def backup_type(self):
         if self._prog_name == self.bu_prog:
             _tmp = {'FULL': actions.backup_types.FULL, 'INC': actions.backup_types.INC}
-            return _tmp[vars(self._args)['work']]
+            return _tmp[vars(self._args)['work'].upper()]
         else:
             return ''
 
@@ -167,60 +184,24 @@ class Params:
         return ext_black + ext_white + path_black + path_white + name_black + name_white + dt_black + dt_white + sz_black + sz_white
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Backup (full, inc or diff) and copy files from SOURCE to DESTINATION',
-                                     prog='backupu.py',
-                                     epilog="Gorgy Golyshev, g.golyshev@gmail.com", fromfile_prefix_chars='@',
-                                     prefix_chars='-+/')
-    parser.add_argument('/n', '--name', help='name for work', required=False, default='backup_work')
-    parser.add_argument('/s', '--source', help='Source dir (one) for backup or copy', required=True)
-    parser.add_argument('/d', '--destination', help='Target dir (one) for backup or copy', required=True)
-    parser.add_argument('/z', '--zip', help='ZIP-Archive destination', required=False, action='store_true')
-    parser.add_argument('/w', '--work', help='backup (full, inc or diff) or copy', default=actions.WORK_TYPE.copy,
-                        choices=[' {}'.format(actions.WORK_TYPE.backup_full),
-                                 ' {}'.format(actions.WORK_TYPE.backup_inc),
-                                 ' {}'.format(actions.WORK_TYPE.backup_diff),
-                                 ' {}'.format(actions.WORK_TYPE.copy)])
-    parser.add_argument('/l', '--log_level', help='log with log-level or none', default='info',
-                        choices=[' info', ' debug', ' error', ' none', ' warn', ' critical'])
-    parser.add_argument('-e', '--exclude-extensions',
-                        help='black list: exclude files with these extensions, separated by comma')
-    parser.add_argument('+e', '--only-extensions',
-                        help='white list: work only with files with these extensions, separated by comma')
-    parser.add_argument('-f', '--exclude-folders',
-                        help='black list: exclude these folders, separated by comma')
-    parser.add_argument('+f', '--only-folders',
-                        help='white list: work only with these folder and included in')
-    parser.add_argument('-n', '--exclude-names',
-                        help='black list: exclude files with these names, separated by comma (using re.search')
-    parser.add_argument('+n', '--only-names',
-                        help='white list: work only with files with these names, separated by comma (using re.search')
-    parser.add_argument('--version', action='version', version='%(prog)s {}'.format(__version__))
-
-    parser.epilog = 'for work parameters from file use: backupu @<filename>'
-    # args=parser.parse_args([r'-s \\Commd\P_CMASFProject', r'-d d:\p', '-z', '-e tmp xml csv', '-f @Recycle', '-n \~\$'])
-    # args = parser.parse_args(['<backup-args1.txt']) # for args from file
-
-    # args = parser.parse_args(['--version'])
-    return parser.parse_args()
-
 
 def main():
-    def make_param_list(strParams):
-        lst = list(map(str.strip, filter(None, re.split('[;,]', strParams))))
-        return lst
-
-    log_levels = {'critical': logging.CRITICAL, 'error': logging.ERROR, 'warn': logging.WARNING, 'info': logging.INFO,
-                  'debug': logging.DEBUG, 'none': None}
-
     xpars = Params(work_type=actions.work_types.BACKUP)
     # args=parse_args()
 
     str_comm = ['~s', '/home/egor/git/jupyter/housing_model',
-                '~d', '/home/egor/T', '~l', 'error', '~n', 'test work',
-                '-e', 'pyc,xls?,py.*', '+e', 'py;sqlite? txt',
-                '-f', r'\\PY\\', '+f', r'py\\',
-                '-n', '_;~', '+n', 'test',
+                '~d', '/home/egor/T',
+                '~l', 'error',
+                # '~e', 'overwrite',
+                '~w', 'full',
+                '~n', 'test work',
+                '~l', 'info',
+                '-e', 'pyc,xls?,py.*',
+                '+e', 'py;sqlite? txt',
+                '-f', r'\\PY\\',
+                '+f', r'py\\',
+                '-n', '_;~',
+                '+n', 'test',
                 '+d', '2020/01/01-2021/12/31']
 
     args = xpars.parse_args(args=str_comm)
@@ -229,11 +210,14 @@ def main():
         print(arg, getattr(args, arg))
 
     print(xpars.zip)
+    # print(xpars.a_attr)
+    # print(xpars.exist_destination)
+    print(xpars.backup_type)
     print(xpars.source)
     print(xpars.destination)
     print(xpars.log_level)
     print(xpars.name)
-    print(xpars.backup_type)
+    print('backup type', xpars.backup_type)
     print(xpars.work_type)
     for f in xpars.filters:
         print(f)

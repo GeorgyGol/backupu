@@ -1,12 +1,8 @@
-"""
-Entry point for COPY//MOVE-commend
-run from batch, do various files moving works
-"""
 from cmdl_backupu import actions, arg_parse  # , new_folder
 
 
-def copyu():
-    xpars = arg_parse.Params(work_type=actions.work_types.COPY)
+def infou():
+    xpars = arg_parse.Params(work_type=actions.work_types.INFO)
 
     # str_comm = ['~s', '/home/egor/git/jupyter/housing_model',
     #             '~d', '/home/egor/T',
@@ -27,19 +23,17 @@ def copyu():
     # get params from command string
     args = xpars.parse_args()
 
-    xCU = actions.xCopyU(source_base_dir=xpars.source,
+    xIF = actions.xInfoU(source_base_dir=xpars.source,
                          log_level=xpars.log_level,
-                         destination_base_dir=xpars.destination,
-                         destination_subdir=xpars.name,
-                         scan_filters=xpars.filters,
-                         new_folder_rule=xpars.exist_destination,
-                         archive_format=xpars.zip)
+                         scan_filters=xpars.filters)
 
     # destination_subdir='BACKUP_{}'.format(dt.datetime.now().strftime('%d_%m_%Y')),
 
-    xCU.run()
+    files = xIF.run()
+    for f in files:
+        print(f)
+
 
 if __name__ == "__main__":
-    # main()
-    copyu()
-    print('Copy4U done.')
+    infou()
+    print('InfoU done.')
