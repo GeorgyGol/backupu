@@ -15,15 +15,13 @@ def main():
     #             '~w', 'inc',
     #             '~d', '/home/egor/T',
     #             '~n', 'test work',
-    #             '-e', 'pyc,xls?,py.*',
+    #             '-e', 'pyc,xls?',
     #             '+e', 'py;sqlite? txt',
-    #             '-f', r'\\PY\\',
-    #             '+f', r'py\\',
     #             '-n', '_;~',
-    #             '+n', 'test',
+    #             '+n', 'year,month,serv',
     #             '-a',
     #             '~l', 'info',
-    #             '+d', '2020/01/01-2021/12/31']
+    #             '+d', '2020/01/01-2022/12/31']
 
     # for debug: get params from string
     # args = xpars.parse_args(args=str_comm)

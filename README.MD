@@ -1,154 +1,261 @@
 # BackupU
-Backup and copying files while maintaining the directory structure, with starting and setting parameters from the command 
-line (for use in assigned tasks and scripts).
 
-Both for backup and for copying, filters are available by file extension, by name, by the full path, both black lists and white lists.
+## Three command line utilities and Python modules are introduced
+### For what
+For backing up files that have passed through fairly widely customizable filters.   
+ Filters by string parameters (path, filename, extension) are based on Python regular expressions (some may not work). Utilities work from the command line - they can be used in scheduled tasks.   
+The `infou` utility allows you to configure options for the `copyu` and `backupu` utilities (the utility accepts all copy and backup options, but does not perform any actions - except for displaying a list of files on the screen).    
+In addition, the utility can be used, for example, to analyze the sizes of files of different types (pass the output to a csv-file with further analysis).   
+The utilities work over the network (with the appropriate protocols connected), do not stop working in case of errors, write the error to the log file (and show it in the console).    
+The utilities work on both OS Windows and Linux (Ubuntu 18.04).
 
-Archiving (zip) of the final set is also available.
+### command line utilities
+**backupu** - for backup files   
+**copyu**   - for copy files   
+**infou**   - for show files info in concole   
 
-Implemented backup:
-1. full
-2. incremental
-3. differential
+Backup, copy or display information about a file from the *SOURCE*, while maintaining the directory tree.
 
-For backups, the archive attribute of the file is used.
+    Installation
+    pip install git+https://github.com/GeorgyGol/backupu
+    
+### Usage example:
 
-**The working version is for MS Windows only**
+    copyu ~s="/home/egor/git/jupyter/housing_model" ~d="/home/egor/T" ~n="test work" ~e="overwrite" -e="pyc,xls?" +e="py;sqlite? txt" -f="\.git" -n="_;~" +n="year$" ~l="info" +d="2020/01/01-2021/12/31"
 
+or   
 
-## Requirements
-**Requires:**  Python 3.3 and above.
-The info.py module (analysis of a scanned list of files - not available in scripts from the command line, available 
-only in Python codes) uses pandas 22 (and above).
+    copyu @copyTest.params
 
-**Used modules:**
-_argparse, logging, os, re, datetime, subprocess, zipfile, abc, shutil, sys,_
+Copy from "/home/egor/git/jupyter/housing_model" to "/home/egor/T/test work" all files with:   
+   - an extension that includes a combination of "py", "sqlite\<any character\>" and "txt", 
+   - exclude from copying everything that is in the folder ".git", 
+   - exclude everything that has "_;~" in the name, 
+   - eclude files modified outside the date range "2020/01/01-2021/12/31", 
+   - exclude files with the "pyc" extension and all Excel-files from copying, 
+   - copy only files whose names are end with "year$", 
+   - display the operation log on the screen in "info" mode (a log file is created in the target directory, in which the title of the operation and errors are written), 
+   - if there is a target folder, merge folders.
 
-**Operating system:** MS Windows (the file attribute is "archived")? Linux.
+    backupu ~s="/home/egor/git/jupyter/housing_model" ~d="/home/egor/T" ~n="test work" ~w="full" -e="pyc,xls?" +e="py;sqlite? txt" -f="\.git" -n="_;~" +n="year$" ~l="info" +d="2020/01/01-2021/12/31"
+    
+or   
 
-## Installation:
-
-```
-pip install git + https: //github.com/GeorgyGol/backupu.git
-```
-
-## Usage
-After installation, you can use the backupz command in scripts and / or command line:
-
-```
- > backupu --version
-backupu.py 0.2.0
-```
-
-```
- > backupu -h
+    backupu @full_backup.params
  
-
-usage: backupu.py [-h] [/n NAME] /s SOURCE /d DESTINATION [/z]
-                  [/w { b_full, b_inc, b_diff, copy}]
-                  [/l { info, debug, error, none, warn, critical}]
-                  [-e EXCLUDE_EXTENSIONS] [+e ONLY_EXTENSIONS]
-                  [-f EXCLUDE_FOLDERS] [+f ONLY_FOLDERS] [-n EXCLUDE_NAMES]
-                  [+n ONLY_NAMES] [--version]
-
-Backup (full, inc or diff) and copy files from SOURCE to DESTINATION
-
-optional arguments:
-  -h, --help            show this help message and exit
-  /n NAME, --name NAME  name for work (will be in log)
-  /s SOURCE, --source SOURCE
-                        Source dir (one) for backup or copy (can be network path)
-  /d DESTINATION, --destination DESTINATION
-                        Target dir (one) for backup or copy (can be network path)
-  /z, --zip             ZIP-Archive destination
-  /w { b_full, b_inc, b_diff, copy}, --work { b_full, b_inc, b_diff, copy}
-                        backup (full, incremental or diff) or copy
-  /l { info, debug, error, none, warn, critical}, --log_level { info, debug, error, none, warn, critical}
-                        log with log-level or none - default=info
-  -e EXCLUDE_EXTENSIONS, --exclude-extensions EXCLUDE_EXTENSIONS
-                        black list: exclude files with these extensions,
-                        separated by comma
-  +e ONLY_EXTENSIONS, --only-extensions ONLY_EXTENSIONS
-                        white list: work only with files with these
-                        extensions, separated by comma
-  -f EXCLUDE_FOLDERS, --exclude-folders EXCLUDE_FOLDERS
-                        black list: exclude these folders, separated by comma
-  +f ONLY_FOLDERS, --only-folders ONLY_FOLDERS
-                        white list: work only with these folder and included
-                        in
-  -n EXCLUDE_NAMES, --exclude-names EXCLUDE_NAMES
-                        black list: exclude files with these names, separated
-                        by comma (using re.search
-  +n ONLY_NAMES, --only-names ONLY_NAMES
-                        white list: work only with files with these names,
-                        separated by comma (using re.search
-  --version             show program's version number and exit
-
-for work parameters from file use: backupz @<filename>
-```
-
-```
- > backupu /s "c:\test" /d "d:\test" /n "Full TEST backup" -e "tmp, xml, csv, lnk" -f "@Recycle" -n "\~\$" /w "b_full"
-```
+Perform a full backup using the same parameters (copy all files that passed the filters; if you work in MS Windows, reset the "archive" attribute for each file).  
+ In the case of a backup, a subfolder is created in the target folder according to the following rule: \<backup type\>\_BACKUP\_\<date of backup\>. If there is a target folder, the name of the target folder will be incremented - the files are by no means combined.
  
- performs a full backup (does not take into account the archive 
- attribute, applies all the specified filters, after the backup 
- resets the archive attribute for all copied files), does not 
- backup files with tmp, xml, csv and lnk extensions, does not 
- backup everything that is in the folder @Recycle (the folder is 
- checked as part of the full path, anywhere in the path), files 
- with the name ~ $ are not backed up. A subfolder FULL_21_01_2020 
- is created in the d: \ test folder, all selected files are 
- written to it with the same folder structure (next line do the same)
- 
-```
- > backupu @params.txt
-```
+    backupu ~s="/home/egor/git/jupyter/housing_model" ~d="/home/egor/T" ~n="test work" ~w="inc" -e="pyc,xls?" +e="py;sqlite? txt" -f="\.git" -n="_;~" +n="year$" ~l="info" +d="2020/01/01-2021/12/31"   
 
-parameters are read from a file `params.txt`. 
+or   
 
-`params.txt` - text file, may be like this:  
-
-```buildoutcfg
-/s c:\test
-/d d:\test
-/n Full TEST backup
--e tmp, xml, csv, lnk
--f @Recycle
--n \~\$
-/w b_full
-```
-
-## How it works:
-1. The source directory is scanned (```scan.py``` module, ```os.walk``` is used), a list of files with full paths is created
-2. Filters are applied to the list (the virtual class for the 
-filter in the same module is ```FFilter```, 
-ready-made filters are the classes ```x_extension_list``` 
-(by file extensions), ```x_folders``` (by the path), 
-```x_names``` (by name), ```x_archive``` 
-(by the "archive" attribute - for backup is applied 
-automatically depending on the selected plan))
-3. the target backup folder is created (the virtual class 
-for creating the folder is ```X_SPATH```, the implementation 
-is ```x_path_date_inc``` (in the folder specified as a target, 
-a subfolder of the form ```<backup type>_<date in the format dd_mm_YYYY>_<backup number for this day>``` iscreated), 
-```x_path_copy``` is used as the target the one specified in 
-the parameters, no intermediate subfolders are created)
-4. a folder structure is created inside the target backup 
-folder that repeats the original one (empty folders - with 
-filtered files - are not created)
-5. Inside the target structure, the source files are copied. 
-In the case of a full or incremental backup, 
-the archive attribute for the source files is reset. 
-When copying and differential backup, the attribute remains 
-unchanged.
-6. if archiving is used, a zip archive is created inside the 
-target folder, the source files with paths are copied to this 
-archive.
-7. inside the target backup folder is placed a log file with 
-the selected logging level (at debug level, the copy results 
-for each file will be recorded)
-
-_When using backupz as a script, the target folder (p. 2) is always created_
+    backupu @inc_backup.params
 
 
+Perform an incremental backup according to the same parameters: only files with the "archive" attribute set (if working in MS Windows) or files whose modification date is greater than the date of the last log file in the "/home/egor/T" folder.   
+
+When adding the "+z" parameter in cases of copying or backup, the target will be a zip archive file with a name built according to the rules for constructing a folder name. Log files in this case will be created in the base target folder (they are not transferred to the archive)
+
+    infou ~s="/home/egor/git/jupyter/housing_model" ~d="/home/egor/T" ~n="test work" ~w="inc" -e="pyc,xls?" +e="py;sqlite? txt" -f="\.git" -n="_;~" +n="year$" ~l="info" +d="2020/01/01-2021/12/31"   
+
+or   
+
+    infou @some_params.params
+
+
+Prints to the console the paths, modification dates, size, extension, mode, name and state of the "archived" attribute for each file that passed the filters, in csv file format (delimiter = ";"). Redirecting output to a file - OS means.
+
+
+#### Params descrioptions:
+Utilities are launched with command line parameters or with a file in which these parameters are collected; the parameters are approximately the same for all three utilities, but they are not the same.
+
+**Valid parameters**
+  
+<blockquote><b>Attention!!! The tilde sign - ~ - is used as a sign denoting the parameter, except for the -a parameter (disable work with archive file attributes) - because the signs "-" and "+" are used to define "white" and "black" filters (below in parameters). For filters - "-" and "+", for other parameters - "~"</b></blockquote>
+
+**Tilde params (common)**
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>~n</td>
+<td>--name</td>
+<td>name for work (used in the log file; when copying (copyu) a subfolder is created in the target folder with name = this parameter)</td>
+</tr>
+<tr>
+<td>~s</td>
+<td>--source</td>
+<td>Source path (one) – required parameter</td>
+</tr>
+<tr>
+<td>~d</td>
+<td>--destination</td>
+<td>Target base path (one) for backup or copy (can be specified for infou, but not used)</td>
+</tr>
+<tr>
+<td>~l</td>
+<td>--log_level</td>
+<td>Log with log-level or none (<i>debug</i> will print information about processing each file; doesn't work in infou)</td>
+</tr>
+<tr>
+<td>+z</td>
+<td>--zip</td>
+<td>zip-archive destination</td>
+</tr>
+</table>
+
+**backupu only params**
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>~w</td>
+<td>--work</td>
+<td>backup type: full | inc <br>(full or incremental)</td>
+</tr>
+<tr>
+<td>-a</td>
+<td>--not-archive</td>
+<td>(with a minus)<br>Do not use the archive attribute of the file - works only in MS Windows. When you disable the archive attribute (and in Linux), for incremental backup, the date of the last backup is used, which is determined by the date of the log file</td>
+</table>
+
+**copyu only params**
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>~e</td>
+<td>--exist_dest</td>
+<td>if destination already exists do... - overwrite | new | error <br>
+write over (merge), create a new subfolder in Target base path, or throw an error</td>
+</tr>
+</table>
+
+**Filter options:**   
+Filters are white and black. Black ones exclude files from the resulting list, white ones include "only files" them. String filters (filenames, path parts, extensions) are set according to Python's regular expression rules.
+For white filters, the order of the parameters in the line or params-file matters.   
+
+*Remember: the minus and plus signs are used for filter parameters. "-" means black filter, "+" - white*   
+
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>-e</td>
+<td>--exclude-extensions</td>
+<td>black list: exclude files with these extensions, separated by comma (or semicolon, or space)</td>
+</tr>
+<tr>
+<td>+e</td>
+<td>--include-extensions</td>
+<td>white list: include only files with these extensions, separated by comma (or semicolon, or space)</td>
+</table>
+
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>-f</td>
+<td>--exclude-folders</td>
+<td>black list: exclude these folders, separated by comma (or semicolon, or space)</td>
+</tr>
+<tr>
+<td>+f</td>
+<td>--include-folders</td>
+<td>white list: include only these folders, separated by comma (or semicolon, or space)</td>
+</table>
+
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>-n</td>
+<td>--exclude-names</td>
+<td>black list: exclude files with these names, separated by comma (or semicolon, or space)</td>
+</tr>
+<tr>
+<td>+n</td>
+<td>--include-names</td>
+<td>white list: include only files with these names, separated by comma (or semicolon, or space)</td>
+</table>
+
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>-d</td>
+<td>--exclude-dates</td>
+<td>black list: date (last file modification) range <YYYY/mm/dd-YYYY/mm/dd>, if high date omited - use now</td>
+</tr>
+<tr>
+<td>+d</td>
+<td>--include-dates</td>
+<td>white list: date (last file modification) range <YYYY/mm/dd-YYYY/mm/dd>, if high date omited - use now</td>
+</table>
+
+<table>
+<tr>
+<td>short</td>
+<td>full</td>
+<td>description</td>
+</tr>
+<tr>
+<td>-s</td>
+<td>--exclude-size</td>
+<td>black list: size (in mBt) range <0-1e3>, if high level omited - extra large</td>
+</tr>
+<tr>
+<td>+s</td>
+<td>--include-size</td>
+<td>white list: size (in mBt) range <0-1e3>, if high level omited - extra large</td>
+</table>
+
+--version – show utilities version
+
+**for work parameters from file use: \<utility name\>@\<filename\>'**   
+It is allowed to put parameters in a text file and run utilities with a single parameter - the file name. The launch in this case will look like this:
+   
+    copyu @<params file path>   
+    backupu @<params file path>   
+    infou @<params file path>
+
+**example of params file (for backupu):**   
+
+    --source=/home/egor/git/jupyter/housing_model
+    --destination=/home/egor/T
+    --work=full
+    --name=test work
+    --exclude-extensions=pyc,xls?
+    --include-extensions=py;sqlite? txt
+    --exclude-folders=\.git \.idea
+    --include-folders=/BLOCKS_DB/
+    --exclude-names=_;~
+    --include-names=year$;month
+    --log_level=info
+    --include-dates=2020/01/01-2021/12/31
+
+### Python modules descriptions
+
+Will be soon

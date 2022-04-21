@@ -12,13 +12,11 @@ def copyu():
     #             '~d', '/home/egor/T',
     #             '~n', 'test work',
     #             '~e', 'overwrite',
-    #             '-e', 'pyc,xls?,py.*',
-    #             '+e', 'py;sqlite? txt',
-    #             '-f', r'\\PY\\',
-    #             '+f', r'py\\',
+    #             '-e', 'pyc',
+    #             '+e', 'py;sqlite? txt,ipynb',
     #             '-n', '_;~',
-    #             '+n', 'test',
-    #             '~l', 'info',
+    #             '+n', 'year,month;serv',
+    #             '~l', 'debug',
     #             '+d', '2020/01/01-2021/12/31']
 
     # for debug: get params from string
