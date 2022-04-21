@@ -1,4 +1,5 @@
 # BackupU
+
 ## Three command line utilities and Python modules are introduced
 ### For what
 For backing up files that have passed through fairly widely customizable filters.   
@@ -7,7 +8,6 @@ The `infou` utility allows you to configure options for the `copyu` and `backupu
 In addition, the utility can be used, for example, to analyze the sizes of files of different types (pass the output to a csv-file with further analysis).   
 The utilities work over the network (with the appropriate protocols connected), do not stop working in case of errors, write the error to the log file (and show it in the console).    
 The utilities work on both OS Windows and Linux (Ubuntu 18.04).
-
 
 ### command line utilities
 **backupu** - for backup files   
@@ -42,8 +42,7 @@ Copy from "/home/egor/git/jupyter/housing_model" to "/home/egor/T/test work" all
 or   
 
     backupu @full_backup.params
-   
-
+ 
 Perform a full backup using the same parameters (copy all files that passed the filters; if you work in MS Windows, reset the "archive" attribute for each file).  
  In the case of a backup, a subfolder is created in the target folder according to the following rule: \<backup type\>\_BACKUP\_\<date of backup\>. If there is a target folder, the name of the target folder will be incremented - the files are by no means combined.
  
@@ -256,9 +255,6 @@ It is allowed to put parameters in a text file and run utilities with a single p
     --include-names=year$;month
     --log_level=info
     --include-dates=2020/01/01-2021/12/31
-
-
-
 
 ### Python modules descriptions
 
