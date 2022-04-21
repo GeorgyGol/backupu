@@ -73,9 +73,12 @@ class xScan():
         def white_apply(files):
             fltWhite = list(filter(lambda x: x.color == filter_color.WHITE, self._filters))
             if fltWhite:
-                res = list()
-                for fW in fltWhite:
-                    res += list(filter(fW.s_check, files))
+
+                for t in list(dict.fromkeys([type(fW) for fW in fltWhite])):
+                    res = list()
+                    for fW in list(filter(lambda x: type(x) == t, fltWhite)):
+                        res += list(filter(fW.s_check, files))
+                    files = res
                 return res
             else:
                 return files
@@ -220,7 +223,7 @@ def scan():
     filters = [filterFileExt(color=filter_color.WHITE, rule=r'sqlite\d?'),
                filterFileExt(color=filter_color.WHITE, rule=r'py'),
                filterFileExt(color=filter_color.BLACK, rule=r'pyc'),
-               filterFileExt(color=filter_color.BLACK, rule=r'ipynb')]
+               filterFileName(color=filter_color.WHITE, rule=r'year')]
 
     sc.set_filters(*filters)
     # cw.scanner.set_filters(*filters)
@@ -240,7 +243,7 @@ def scan():
 
 
 if __name__ == "__main__":
-    # scan()
+    scan()
     # for f in os.listdir('..'):
     #     print(f)
 

@@ -1,0 +1,10 @@
+--source=/home/egor/git/jupyter/housing_model
+--name=test work
+--destination=/home/egor/T
+--exclude-extensions=pyc,xls?
+--include-extensions=py;sqlite? txt
+--exclude-folders=\.git \.idea
+--exclude-names=_;~
+--include-names=year$,month,serv,model
+--log_level=info
+--include-dates=2020/01/01-2021/12/31

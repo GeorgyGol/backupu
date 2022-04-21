@@ -27,7 +27,8 @@ class Params:
                                                epilog="Georgy Golyshev, g.golyshev@gmail.com",
                                                fromfile_prefix_chars='@', prefix_chars='-+$&~')
         self._parser.add_argument('~n', '--name', help='name for work', required=False, default='backup')
-        self._parser.add_argument('~s', '--source', help='Source dir (one) for backup or copy', required=True)
+        self._parser.add_argument('~s', '--source', help='Source dir (one) - required', required=True)
+
         if work_type != actions.work_types.INFO:
             self._parser.add_argument('~d', '--destination', help='Target dir (one) for backup or copy', required=True)
             self._parser.add_argument('+z', '--zip', help='ZIP-Archive destination',
@@ -35,6 +36,16 @@ class Params:
         else:
             self._parser.add_argument('~d', '--destination', help='Not used - for compability purpose',
                                       required=False)
+            self._parser.add_argument('~w', '--work', help='Not used - for compability',
+                                      default='FULL',
+                                      choices=['FULL', 'INC', 'full', 'inc'])
+            self._parser.add_argument('-a', '--not-archive', action='store_true',
+                                      help='Not used - for compability')
+            self._parser.add_argument('+z', '--zip', help='ZIP-Archive destination',
+                                      required=False, action='store_true')
+            self._parser.add_argument('~e', '--exist_dest', help='Not used - for compability',
+                                      default='new',
+                                      choices=['new', 'overwrite', 'error'])
 
         if work_type == actions.work_types.BACKUP:
             self._parser.add_argument('~w', '--work', help='backup full or inc',
@@ -59,19 +70,19 @@ class Params:
         self._parser.add_argument('+f', '--include-folders',
                                   help='white list: work only with these folder and included in')
         self._parser.add_argument('-n', '--exclude-names',
-                                  help='black list: exclude files with these names, separated by comma (using re.search')
+                                  help='black list: exclude files with these names, separated by comma')
         self._parser.add_argument('+n', '--include-names',
-                                  help='white list: work only with files with these names, separated by comma (using re.search')
+                                  help='white list: work only with files with these names, separated by comma')
 
         self._parser.add_argument('-d', '--exclude-dates',
-                                  help='Black filter - date range <YYYY/mm/dd-YYYY/mm/dd>, if hight date ommited - use now')
+                                  help='Black filter - date (last modification) range <YYYY/mm/dd-YYYY/mm/dd>, if high date omited - use now')
         self._parser.add_argument('+d', '--include-dates',
-                                  help='White filter - date range <YYYY/mm/dd-YYYY/mm/dd>, if hight date ommited - use now')
+                                  help='White filter - date (last modification) range <YYYY/mm/dd-YYYY/mm/dd>, if high date omited - use now')
 
         self._parser.add_argument('-s', '--exclude-size',
-                                  help='Black filter - size (in mBt) range <0-1e3>, if hight level ommited - extra large')
+                                  help='Black filter - size (in mBt) range <0-1e3>, if high level omited - extra large')
         self._parser.add_argument('+s', '--include-size',
-                                  help='White filter - size (in mBt) range <0-1e3>, if hight level ommited - extra large')
+                                  help='White filter - size (in mBt) range <0-1e3>, if high level omited - extra large')
 
         self._parser.add_argument('--version', action='version', version='%(prog)s {}'.format(__version__))
 

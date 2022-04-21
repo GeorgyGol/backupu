@@ -123,7 +123,7 @@ class abcFilter(ABC):
 
         _s = '{color} filter on {type} ({subtype}); rule = {rule}'
         return _s.format(color=self.color.name, type=self.type.name,
-                         subtype=self.subtype.name, rule=self.rule)
+                         subtype=self.subtype.name, rule=repr(self.rule))
 
     @property
     def BasePath(self) -> str:

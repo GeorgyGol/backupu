@@ -358,7 +358,7 @@ class xInfoU(abcActionU):
     def __init__(self, source_base_dir: str,
                  delimiter: str = ';', log_level=logging.DEBUG, scan_filters: list = list(),
                  new_folder_rule: abcNewFolderExistsRule = exsistOKRule(),
-                 log_file_name='', set_up_logger_on_init=True) -> None:
+                 log_file_name=None, set_up_logger_on_init=True) -> None:
         self._work_name = 'INFO'
         super().__init__(source_base_dir=source_base_dir, destination_base_dir=source_base_dir,
                          log_level=log_level, scan_filters=scan_filters,
