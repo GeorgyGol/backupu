@@ -376,8 +376,8 @@ class xInfoU(abcActionU):
         lines.append(self._new_fold.delimiter.join(_head))
 
         for i, v in enumerate(_files):
-            _lst = [str(i), v[FILE_INFO[0]], v[FILE_INFO[1]].strftime('%Y-%m-D %H:%M'),
-                    v[FILE_INFO[2]].strftime('%Y-%m-D %H:%M'), str(v[FILE_INFO[3]]),
+            _lst = [str(i), v[FILE_INFO[0]], v[FILE_INFO[1]].strftime('%Y-%m-%d %H:%M'),
+                    v[FILE_INFO[2]].strftime('%Y-%m-%d %H:%M'), str(v[FILE_INFO[3]]),
                     str(v[FILE_INFO[4]]), v[FILE_INFO[5]], str(v[FILE_INFO[6]]), v[FILE_INFO[7]]]
 
             _res = self._new_fold.delimiter.join(_lst)
