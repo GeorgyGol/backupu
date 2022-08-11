@@ -1,0 +1,12 @@
+.
+setup.py
+backupz.egg-info/PKG-INFO
+backupz.egg-info/SOURCES.txt
+backupz.egg-info/dependency_links.txt
+backupz.egg-info/entry_points.txt
+backupz.egg-info/top_level.txt
+cmdl_backpz/__init__.py
+cmdl_backpz/actions.py
+cmdl_backpz/backupz.py
+cmdl_backpz/info.py
+cmdl_backpz/scan.py

@@ -1,9 +1,6 @@
---source=/home/egor/git/jupyter/housing_model
---name=test work
---destination=/home/egor/T
---exclude-extensions=pyc,xls?
---include-extensions=py;sqlite? txt
+--source=/run/user/1000/gvfs/smb-share:server=commd.local,share=p_cmasfproject
+--name=P_test
+--destination=/media/egor/TOSHIBA EXT
 --exclude-folders=\.git \.idea
 --exclude-names=_;~
---include-names=year$,month,serv,model
 --log_level=info

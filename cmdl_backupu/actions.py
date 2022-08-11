@@ -649,9 +649,11 @@ def info():
                ]
 
     src = '/home/egor/git/jupyter/housing_model'
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=p_cmasfproject'
+
     dst_fld = r'/home/egor/T'
 
-    ci = xInfoU(source_base_dir=src, log_level=logging.INFO,
+    ci = xInfoU(source_base_dir=smb_src, log_level=logging.INFO,
                 scan_filters=filters)
     fls = ci.run()
     for f in fls:
