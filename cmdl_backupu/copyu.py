@@ -24,6 +24,7 @@ def copyu():
 
     # get params from command string
     args = xpars.parse_args()
+    smb_src = '/run/user/1000/gvfs/smb-share:server=commd.local,share=statistica'
 
     xCU = actions.xCopyU(source_base_dir=xpars.source,
                          log_level=xpars.log_level,

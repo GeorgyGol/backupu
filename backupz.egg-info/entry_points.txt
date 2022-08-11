@@ -1,0 +1,3 @@
+[console_scripts]
+backupz = cmdl_backpz.backupz:main
+

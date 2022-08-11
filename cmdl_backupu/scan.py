@@ -24,7 +24,14 @@ def file_info(item: str) -> dict:
     :return: dict with file info: path, change date, create date, size in bytes, mode, extension, file name, arhive attrubute
     :raise - errors from os.stat
     """
-    st = os.stat(item)
+    try:
+        st = os.stat(item)
+    except OSError:
+        return {FILE_INFO[0]: item, FILE_INFO[1]: None,
+                FILE_INFO[2]: None,
+                FILE_INFO[3]: 0, FILE_INFO[4]: None, FILE_INFO[5]: item.split('.')[-1],
+                FILE_INFO[6]: False,
+                FILE_INFO[7]: Path(item).stem}
     # x = dt.datetime.fromtimestamp(st.st_mtime).date()
     try:
         if platform.system() == 'Windows':
@@ -164,7 +171,8 @@ def scan():
     # create xScan object
 
     # --- for scanning selected dir
-    sc = xScan(start_path=r'/home/egor/git/jupyter/housing_model')
+    # sc = xScan(start_path=r'/home/egor/git/jupyter/housing_model')
+    sc = xScan(start_path=r'/run/user/1000/gvfs/smb-share:server=commd.local,share=p_cmasfproject')
 
     # --- for scanning current dir
     # sc = xScan()
