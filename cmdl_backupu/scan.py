@@ -41,11 +41,17 @@ def file_info(item: str) -> dict:
             isA = False
     except IndexError:
         isA = False
-
-    return {FILE_INFO[0]: item, FILE_INFO[1]: dt.datetime.fromtimestamp(st.st_mtime),
+    try:
+        return {FILE_INFO[0]: item, FILE_INFO[1]: dt.datetime.fromtimestamp(st.st_mtime),
             FILE_INFO[2]: dt.datetime.fromtimestamp(st.st_ctime),
             FILE_INFO[3]: st.st_size, FILE_INFO[4]: st.st_mode, FILE_INFO[5]: item.split('.')[-1], FILE_INFO[6]: isA,
             FILE_INFO[7]: Path(item).stem}
+    except:
+        return {FILE_INFO[0]: item, FILE_INFO[1]: None,
+                FILE_INFO[2]: None,
+                FILE_INFO[3]: 0, FILE_INFO[4]: None, FILE_INFO[5]: item.split('.')[-1],
+                FILE_INFO[6]: False,
+                FILE_INFO[7]: Path(item).stem}
 
 
 class xScan():
